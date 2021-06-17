@@ -1,6 +1,5 @@
 package com.idormy.sms.forwarder.sender
 
-import android.content.Context
 import android.os.Handler
 import android.util.Log
 import com.alibaba.fastjson.JSON
@@ -11,11 +10,9 @@ import com.idormy.sms.forwarder.model.vo.*
 import com.idormy.sms.forwarder.sender.SenderBarkMsg.sendMsg
 import com.idormy.sms.forwarder.sender.SenderDingDingMsg.sendMsg
 import com.idormy.sms.forwarder.sender.SenderMailMsg.sendEmail
-import com.idormy.sms.forwarder.utils.LogUtil
 import com.idormy.sms.forwarder.utils.LogUtil.addLog
 import com.idormy.sms.forwarder.utils.LogUtil.updateLog
 import com.idormy.sms.forwarder.utils.NetUtil.netWorkStatus
-import com.idormy.sms.forwarder.utils.RuleUtil
 import com.idormy.sms.forwarder.utils.RuleUtil.getRule
 
 object SendUtil {
@@ -23,14 +20,12 @@ object SendUtil {
     fun sendMsgList(smsVoList: List<SmsVo>, simId: Int) {
         Log.i(TAG, "send_msg_list size: " + smsVoList.size)
         for (smsVo in smsVoList) {
-            sendMsg1(smsVo, simId)
+            sendMsg(smsVo, simId)
         }
     }
 
-    fun sendMsg1(smsVo: SmsVo, simId: Int) {
+    fun sendMsg(smsVo: SmsVo, simId: Int) {
         Log.i(TAG, "send_msg smsVo:$smsVo")
-        RuleUtil.init()
-        LogUtil.init()
         val key = "SIM$simId"
         val ruleList = getRule(null, key)
         if (ruleList.isNotEmpty()) {

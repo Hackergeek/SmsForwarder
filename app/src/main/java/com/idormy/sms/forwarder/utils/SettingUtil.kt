@@ -29,6 +29,9 @@ object SettingUtil {
             .apply()
     }
 
+    /**
+     * 转发时是否附加卡槽信息
+     */
     @JvmStatic
     val switchAddExtra: Boolean
         get() = sp_setting.getBoolean(Define.SP_MSG_KEY_SWITCH_ADD_EXTRA, false)
@@ -40,10 +43,16 @@ object SettingUtil {
             .apply()
     }
 
+    /**
+     * 转发时是否启动自定义模版
+     */
     @JvmStatic
     val switchSmsTemplate: Boolean
         get() = sp_setting.getBoolean(Define.SP_MSG_KEY_SWITCH_SMS_TEMPLATE, false)
 
+    /**
+     * 设备名称
+     */
     @JvmStatic
     val addExtraDeviceMark: String?
         get() {
@@ -61,6 +70,9 @@ object SettingUtil {
             .apply()
     }
 
+    /**
+     * 转发信息模版
+     */
     @JvmStatic
     val smsTemplate: String?
         get() = sp_setting.getString(

@@ -1,7 +1,6 @@
 package com.idormy.sms.forwarder.utils
 
 import android.content.ContentValues
-import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.provider.BaseColumns
 import android.util.Log
@@ -12,19 +11,13 @@ import java.util.*
 
 object RuleUtil {
     var TAG = "RuleUtil"
-    var hasInit = false
     var dbHelper: DbHelper? = null
     var db: SQLiteDatabase? = null
 
-    @JvmStatic
-    fun init() {
-        synchronized(hasInit) {
-            if (hasInit) return
-            hasInit = true
-            dbHelper = DbHelper(MyApplication.globalContext)
-            // Gets the data repository in write mode
-            db = dbHelper!!.readableDatabase
-        }
+    init {
+        dbHelper = DbHelper(MyApplication.globalContext)
+        // Gets the data repository in write mode
+        db = dbHelper!!.readableDatabase
     }
 
     fun addRule(ruleModel: RuleModel): Long {

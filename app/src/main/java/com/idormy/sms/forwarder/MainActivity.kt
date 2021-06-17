@@ -34,7 +34,6 @@ class MainActivity : AppCompatActivity(),
     private var adapter: LogAdapter? = null
     private lateinit var listView: ReFreshListView
     override fun onCreate(savedInstanceState: Bundle?) {
-        LogUtil.init()
         Log.d(TAG, "oncreate")
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -116,7 +115,7 @@ class MainActivity : AppCompatActivity(),
 
     override fun onRefresh() {
         val handler = Handler()
-        handler.postDelayed({ // TODO Auto-generated method stub
+        handler.postDelayed({
             //获取最新数据
             initTLogs()
             //通知界面显示
@@ -198,7 +197,7 @@ class MainActivity : AppCompatActivity(),
     fun cleanLog(view: View?) {
         val builder = AlertDialog.Builder(this@MainActivity)
         builder.setTitle("确定要清空转发记录吗？")
-            .setPositiveButton("清空") { dialog, which ->
+            .setPositiveButton("清空") { _, _ ->
                 // 积极
                 // TODO Auto-generated method stub
                 LogUtil.delLog(null, null)

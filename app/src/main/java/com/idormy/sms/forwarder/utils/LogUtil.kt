@@ -11,19 +11,13 @@ import java.util.*
 
 object LogUtil {
     var TAG = "LogUtil"
-    private var hasInit = false
     var dbHelper: DbHelper? = null
     var db: SQLiteDatabase? = null
 
-    @JvmStatic
-    fun init() {
-        synchronized(hasInit) {
-            if (hasInit) return
-            hasInit = true
-            dbHelper = DbHelper(MyApplication.globalContext)
-            // Gets the data repository in write mode
-            db = dbHelper!!.readableDatabase
-        }
+    init {
+        dbHelper = DbHelper(MyApplication.globalContext)
+        // Gets the data repository in write mode
+        db = dbHelper!!.readableDatabase
     }
 
     @JvmStatic
