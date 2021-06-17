@@ -61,14 +61,14 @@
             android:name=".SenderActivity"
             android:label="发送方" />
 
-        <receiver android:name=".BroadCastReceiver.RebootBroadcastReceiver">
+        <receiver android:name=".receiver.RebootBroadcastReceiver">
             <intent-filter android:priority="2147483647">
                 <!--重启广播-->
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
         <receiver
-            android:name=".BroadCastReceiver.SmsForwarderBroadcastReceiver"
+            android:name=".receiver.SmsForwarderBroadcastReceiver"
             android:permission="android.permission.BROADCAST_SMS">
             <intent-filter android:priority="2147483647">
                 <!--短信广播-->
@@ -76,7 +76,7 @@
             </intent-filter>
         </receiver>
 
-        <service android:name=".FrontService" />
+        <service android:name=".ForegroundService" />
     </application>
 
 </manifest>

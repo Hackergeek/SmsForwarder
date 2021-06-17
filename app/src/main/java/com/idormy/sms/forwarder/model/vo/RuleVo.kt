@@ -1,6 +1,6 @@
-package com.idormy.sms.forwarder.model.vo;
+package com.idormy.sms.forwarder.model.vo
 
-public class RuleVo {
-    private String matchStr;
-    private String senderStr;
+class RuleVo {
+    private val matchStr: String? = null
+    private val senderStr: String? = null
 }

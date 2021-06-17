@@ -1,143 +1,129 @@
-package com.idormy.sms.forwarder.sender;
+package com.idormy.sms.forwarder.sender
 
-import android.os.Bundle;
-import android.os.Handler;
-import android.text.TextUtils;
-import android.util.Base64;
-import android.util.Log;
+import android.os.Bundle
+import android.os.Handler
+import android.os.Message
+import android.text.TextUtils
+import android.util.Base64
+import android.util.Log
+import com.alibaba.fastjson.JSON
+import com.idormy.sms.forwarder.SenderActivity
+import com.idormy.sms.forwarder.utils.LogUtil.updateLog
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import java.io.IOException
+import java.net.URLEncoder
+import java.util.*
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 
-import com.alibaba.fastjson.JSON;
-import com.idormy.sms.forwarder.utils.LogUtil;
 
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+object SenderDingDingMsg {
+    var TAG = "SenderDingdingMsg"
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-
-import static com.idormy.sms.forwarder.SenderActivity.NOTIFY;
-
-public class SenderDingdingMsg {
-
-    static String TAG = "SenderDingdingMsg";
-
-    public static void sendMsg(final long logId, final Handler handError, String token, String secret, String atMobiles, Boolean atAll, String msg) throws Exception {
-        Log.i(TAG, "sendMsg token:" + token + " secret:" + secret + " atMobiles:" + atMobiles + " atAll:" + atAll + " msg:" + msg);
-
+    @JvmStatic
+    @Throws(Exception::class)
+    fun sendMsg(
+        logId: Long,
+        handError: Handler?,
+        token: String?,
+        secret: String?,
+        atMobiles: String?,
+        atAll: Boolean?,
+        msg: String
+    ) {
+        var token = token
+        Log.i(TAG, "sendMsg token:$token secret:$secret atMobiles:$atMobiles atAll:$atAll msg:$msg")
         if (token == null || token.isEmpty()) {
-            return;
+            return
         }
-
-        token = "https://oapi.dingtalk.com/robot/send?access_token=" + token;
+        token = "https://oapi.dingtalk.com/robot/send?access_token=$token"
         if (secret != null && !secret.isEmpty()) {
-            Long timestamp = System.currentTimeMillis();
-            String stringToSign = timestamp + "\n" + secret;
-            Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(secret.getBytes("UTF-8"), "HmacSHA256"));
-            byte[] signData = mac.doFinal(stringToSign.getBytes("UTF-8"));
-            String sign = URLEncoder.encode(new String(Base64.encode(signData, Base64.NO_WRAP)), "UTF-8");
-            token += "&timestamp=" + timestamp + "&sign=" + sign;
-            Log.i(TAG, "webhook_token:" + token);
+            val timestamp = System.currentTimeMillis()
+            val stringToSign = """
+                $timestamp
+                $secret
+                """.trimIndent()
+            val mac = Mac.getInstance("HmacSHA256")
+            mac.init(SecretKeySpec(secret.toByteArray(charset("UTF-8")), "HmacSHA256"))
+            val signData = mac.doFinal(stringToSign.toByteArray(charset("UTF-8")))
+            val sign = URLEncoder.encode(String(Base64.encode(signData, Base64.NO_WRAP)), "UTF-8")
+            token += "&timestamp=$timestamp&sign=$sign"
+            Log.i(TAG, "webhook_token:$token")
         }
-
-        Map textMsgMap = new HashMap();
-        textMsgMap.put("msgtype", "text");
-        Map textText = new HashMap();
-        textText.put("content", msg);
-        textMsgMap.put("text", textText);
+        val textMsgMap: MutableMap<Any?, Any?> = HashMap<Any?, Any?>()
+        textMsgMap["msgtype"] = "text"
+        val textText: MutableMap<Any?, Any?> = HashMap<Any?, Any?>()
+        textText["content"] = msg
+        textMsgMap["text"] = textText
         if (atMobiles != null || atAll != null) {
-            Map AtMap = new HashMap();
+            val atMap: MutableMap<Any?, Any?> = HashMap<Any?, Any?>()
             if (atMobiles != null) {
-                String[] atMobilesArray = atMobiles.split(",");
-                List<String> atMobilesList = new ArrayList<>();
-                for (String atMobile : atMobilesArray
-                ) {
+                val atMobilesArray = atMobiles.split(",").toTypedArray()
+                val atMobilesList: MutableList<String> = ArrayList()
+                for (atMobile in atMobilesArray) {
                     if (TextUtils.isDigitsOnly(atMobile)) {
-                        atMobilesList.add(atMobile);
+                        atMobilesList.add(atMobile)
                     }
                 }
-                if (!atMobilesList.isEmpty()) {
-                    AtMap.put("atMobiles", atMobilesList);
-
+                if (atMobilesList.isNotEmpty()) {
+                    atMap["atMobiles"] = atMobilesList
                 }
             }
-
-            AtMap.put("isAtAll", false);
+            atMap["isAtAll"] = false
             if (atAll != null) {
-                AtMap.put("isAtAll", atAll);
-
+                atMap["isAtAll"] = atAll
             }
-
-            textMsgMap.put("at", AtMap);
+            textMsgMap["at"] = atMap
         }
-
-        String textMsg = JSON.toJSONString(textMsgMap);
-        Log.i(TAG, "textMsg:" + textMsg);
-
-        OkHttpClient client = new OkHttpClient();
-        RequestBody requestBody = RequestBody.create(MediaType.parse("application/json;charset=utf-8"),
-                textMsg);
-
-        final Request request = new Request.Builder()
-                .url(token)
-                .addHeader("Content-Type", "application/json; charset=utf-8")
-                .post(requestBody)
-                .build();
-        Call call = client.newCall(request);
-        call.enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, final IOException e) {
-                LogUtil.updateLog(logId, 0, e.getMessage());
-                Log.d(TAG, "onFailure：" + e.getMessage());
-
+        val textMsg = JSON.toJSONString(textMsgMap)
+        Log.i(TAG, "textMsg:$textMsg")
+        val client = OkHttpClient()
+        val requestBody: RequestBody = RequestBody.create(
+            "application/json;charset=utf-8".toMediaTypeOrNull(),
+            textMsg
+        )
+        val request: Request = Request.Builder()
+            .url(token)
+            .addHeader("Content-Type", "application/json; charset=utf-8")
+            .post(requestBody)
+            .build()
+        val call = client.newCall(request)
+        call.enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                updateLog(logId, 0, e.message)
+                Log.d(TAG, "onFailure：" + e.message)
                 if (handError != null) {
-                    android.os.Message msg = new android.os.Message();
-                    msg.what = NOTIFY;
-                    Bundle bundle = new Bundle();
-                    bundle.putString("DATA", "发送失败：" + e.getMessage());
-                    msg.setData(bundle);
-                    handError.sendMessage(msg);
+                    val msg = Message()
+                    msg.what = SenderActivity.NOTIFY
+                    val bundle = Bundle()
+                    bundle.putString("DATA", "发送失败：" + e.message)
+                    msg.data = bundle
+                    handError.sendMessage(msg)
                 }
-
             }
 
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                final String responseStr = response.body().string();
-                Log.d(TAG, "Code：" + String.valueOf(response.code()) + responseStr);
+            @Throws(IOException::class)
+            override fun onResponse(call: Call, response: Response) {
+                val responseStr = response.body!!.string()
+                Log.d(TAG, "Code：" + response.code.toString() + responseStr)
 
                 //TODO:粗略解析是否发送成功
                 if (responseStr.contains("\"errcode\":0")) {
-                    LogUtil.updateLog(logId, 1, responseStr);
+                    updateLog(logId, 1, responseStr)
                 } else {
-                    LogUtil.updateLog(logId, 0, responseStr);
+                    updateLog(logId, 0, responseStr)
                 }
-
                 if (handError != null) {
-                    android.os.Message msg = new android.os.Message();
-                    msg.what = NOTIFY;
-                    Bundle bundle = new Bundle();
-                    bundle.putString("DATA", "发送状态：" + responseStr);
-                    msg.setData(bundle);
-                    handError.sendMessage(msg);
-                    Log.d(TAG, "Coxxyyde：" + String.valueOf(response.code()) + responseStr);
+                    val msg = Message()
+                    msg.what = SenderActivity.NOTIFY
+                    val bundle = Bundle()
+                    bundle.putString("DATA", "发送状态：$responseStr")
+                    msg.data = bundle
+                    handError.sendMessage(msg)
+                    Log.d(TAG, "Coxxyyde：" + response.code.toString() + responseStr)
                 }
-
             }
-        });
+        })
     }
-
-
 }

@@ -1,22 +1,12 @@
-package com.idormy.sms.forwarder.model.vo;
+package com.idormy.sms.forwarder.model.vo
 
-import java.io.Serializable;
+import java.io.Serializable
 
-public class ServerChanSettingVo implements Serializable {
-    private String sendKey;
+class ServerChanSettingVo : Serializable {
+    var sendKey: String? = null
 
-    public ServerChanSettingVo() {
-    }
-
-    public ServerChanSettingVo(String sendKey) {
-        this.sendKey = sendKey;
-    }
-
-    public String getSendKey() {
-        return sendKey;
-    }
-
-    public void setSendKey(String sendKey) {
-        this.sendKey = sendKey;
+    constructor() {}
+    constructor(sendKey: String?) {
+        this.sendKey = sendKey
     }
 }

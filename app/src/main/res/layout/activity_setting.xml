@@ -128,7 +128,7 @@
                 android:text="转发时附加卡槽信息"
                 android:textStyle="bold" />
 
-            <Switch
+            <androidx.appcompat.widget.SwitchCompat
                 android:id="@+id/switch_add_extra"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -154,7 +154,7 @@
                 android:text="转发时启用自定义模版"
                 android:textStyle="bold" />
 
-            <Switch
+            <androidx.appcompat.widget.SwitchCompat
                 android:id="@+id/switch_sms_template"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -284,12 +284,12 @@
         </LinearLayout>
 
         <Button
-            android:id="@+id/btnInitSetting"
+            android:id="@+id/btn_reset_settings"
             android:layout_width="match_parent"
             android:layout_height="35dp"
             android:layout_margin="10dp"
             android:background="@color/colorPrimary"
-            android:onClick="initSetting"
+            android:onClick="resetSettings"
             android:padding="0dp"
             android:text="恢复初始化配置" />
 

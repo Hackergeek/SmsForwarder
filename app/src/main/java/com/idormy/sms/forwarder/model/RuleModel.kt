@@ -1,316 +1,196 @@
-package com.idormy.sms.forwarder.model;
+package com.idormy.sms.forwarder.model
 
-import android.util.Log;
+import android.util.Log
+import com.idormy.sms.forwarder.R
+import com.idormy.sms.forwarder.model.vo.SmsVo
+import com.idormy.sms.forwarder.utils.RuleLineUtils.checkRuleLines
+import java.util.*
+import java.util.regex.Pattern
+import java.util.regex.PatternSyntaxException
 
-import com.idormy.sms.forwarder.R;
-import com.idormy.sms.forwarder.model.vo.SmsVo;
-import com.idormy.sms.forwarder.utils.RuleLineUtils;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
-
-public class RuleModel {
-    public static final String FILED_TRANSPOND_ALL = "transpond_all";
-    public static final String FILED_PHONE_NUM = "phone_num";
-    public static final String FILED_MSG_CONTENT = "msg_content";
-    public static final String FILED_MULTI_MATCH = "multi_match";
-    public static final Map<String, String> FILED_MAP = new HashMap<String, String>();
-    public static final String CHECK_IS = "is";
-    public static final String CHECK_CONTAIN = "contain";
-    public static final String CHECK_START_WITH = "startwith";
-    public static final String CHECK_END_WITH = "endwith";
-    public static final String CHECK_NOT_IS = "notis";
-    public static final String CHECK_REGEX = "regex";
-    public static final Map<String, String> CHECK_MAP = new HashMap<String, String>();
-    public static final String CHECK_SIM_SLOT_ALL = "ALL";
-    public static final String CHECK_SIM_SLOT_1 = "SIM1";
-    public static final String CHECK_SIM_SLOT_2 = "SIM2";
-    public static final Map<String, String> SIM_SLOT_MAP = new HashMap<String, String>();
-
-    static {
-        FILED_MAP.put("transpond_all", "全部转发");
-        FILED_MAP.put("phone_num", "手机号");
-        FILED_MAP.put("msg_content", "内容");
-        FILED_MAP.put("multi_match", "多重匹配");
-    }
-
-    static {
-        CHECK_MAP.put("is", "是");
-        CHECK_MAP.put("contain", "包含");
-        CHECK_MAP.put("startwith", "开头是");
-        CHECK_MAP.put("endwith", "结尾是");
-        CHECK_MAP.put("notis", "不是");
-        CHECK_MAP.put("regex", "正则匹配");
-    }
-
-    static {
-        SIM_SLOT_MAP.put("ALL", "全部");
-        SIM_SLOT_MAP.put("SIM1", "SIM1");
-        SIM_SLOT_MAP.put("SIM2", "SIM2");
-    }
-
-    private String TAG = "RuleModel";
-    private Long id;
-    private String filed;
-    private String check;
-    private String value;
-    private Long senderId;
-    private Long time;
-    private String simSlot;
-
-    public static String getRuleMatch(String filed, String check, String value, String simSlot) {
-        String SimStr = SIM_SLOT_MAP.get(simSlot) + "卡 ";
-        if (filed == null || filed.equals(FILED_TRANSPOND_ALL)) {
-            return SimStr + "全部 转发到 ";
-        } else {
-            return SimStr + "当 " + FILED_MAP.get(filed) + " " + CHECK_MAP.get(check) + " " + value + " 转发到 ";
-        }
-    }
-
-    public static String getRuleFiledFromCheckId(int id) {
-        switch (id) {
-            case R.id.btnContent:
-                return FILED_MSG_CONTENT;
-            case R.id.btnPhone:
-                return FILED_PHONE_NUM;
-            case R.id.btnMultiMatch:
-                return FILED_MULTI_MATCH;
-            default:
-                return FILED_TRANSPOND_ALL;
-        }
-    }
-
-    public static String getRuleCheckFromCheckId(int id) {
-        switch (id) {
-            case R.id.btnContain:
-                return CHECK_CONTAIN;
-            case R.id.btnStartWith:
-                return CHECK_START_WITH;
-            case R.id.btnEndWith:
-                return CHECK_END_WITH;
-            case R.id.btnRegex:
-                return CHECK_REGEX;
-            case R.id.btnNotIs:
-                return CHECK_NOT_IS;
-            default:
-                return CHECK_IS;
-        }
-    }
-
-    public static String getRuleSimSlotFromCheckId(int id) {
-        switch (id) {
-            case R.id.btnSimSlot1:
-                return CHECK_SIM_SLOT_1;
-            case R.id.btnSimSlot2:
-                return CHECK_SIM_SLOT_2;
-            default:
-                return CHECK_SIM_SLOT_ALL;
-        }
-    }
-
-    //字段分支
-    public boolean checkMsg(SmsVo msg) throws Exception {
-
-        //检查这一行和上一行合并的结果是否命中
-        boolean mixChecked = false;
-        if (msg != null) {
-            //先检查规则是否命中
-            switch (this.filed) {
-                case FILED_TRANSPOND_ALL:
-                    mixChecked = true;
-                    break;
-                case FILED_PHONE_NUM:
-                    mixChecked = checkValue(msg.getMobile());
-                    break;
-                case FILED_MSG_CONTENT:
-                    mixChecked = checkValue(msg.getContent());
-                    break;
-                case FILED_MULTI_MATCH:
-                    mixChecked = RuleLineUtils.checkRuleLines(msg, this.value);
-                    break;
-                default:
-                    break;
-
+class RuleModel {
+    companion object {
+        const val FILED_TRANSPOND_ALL = "transpond_all"
+        const val FILED_PHONE_NUM = "phone_num"
+        const val FILED_MSG_CONTENT = "msg_content"
+        const val FILED_MULTI_MATCH = "multi_match"
+        val FILED_MAP: MutableMap<String, String> = HashMap()
+        const val CHECK_IS = "is"
+        const val CHECK_CONTAIN = "contain"
+        const val CHECK_START_WITH = "startwith"
+        const val CHECK_END_WITH = "endwith"
+        const val CHECK_NOT_IS = "notis"
+        const val CHECK_REGEX = "regex"
+        val CHECK_MAP: MutableMap<String?, String> = HashMap()
+        const val CHECK_SIM_SLOT_ALL = "ALL"
+        const val CHECK_SIM_SLOT_1 = "SIM1"
+        const val CHECK_SIM_SLOT_2 = "SIM2"
+        val SIM_SLOT_MAP: MutableMap<String?, String> = HashMap()
+        fun getRuleMatch(filed: String?, check: String?, value: String, simSlot: String?): String {
+            val SimStr = SIM_SLOT_MAP[simSlot].toString() + "卡 "
+            return if (filed == null || filed == FILED_TRANSPOND_ALL) {
+                SimStr + "全部 转发到 "
+            } else {
+                SimStr + "当 " + FILED_MAP[filed] + " " + CHECK_MAP[check] + " " + value + " 转发到 "
             }
         }
 
+        fun getRuleFiledFromCheckId(id: Int): String {
+            return when (id) {
+                R.id.btnContent -> FILED_MSG_CONTENT
+                R.id.btnPhone -> FILED_PHONE_NUM
+                R.id.btnMultiMatch -> FILED_MULTI_MATCH
+                else -> FILED_TRANSPOND_ALL
+            }
+        }
 
-        Log.i(TAG, "rule:" + this + " checkMsg:" + msg + " checked:" + mixChecked);
-        return mixChecked;
+        fun getRuleCheckFromCheckId(id: Int): String {
+            return when (id) {
+                R.id.btnContain -> CHECK_CONTAIN
+                R.id.btnStartWith -> CHECK_START_WITH
+                R.id.btnEndWith -> CHECK_END_WITH
+                R.id.btnRegex -> CHECK_REGEX
+                R.id.btnNotIs -> CHECK_NOT_IS
+                else -> CHECK_IS
+            }
+        }
 
+        fun getRuleSimSlotFromCheckId(id: Int): String {
+            return when (id) {
+                R.id.btnSimSlot1 -> CHECK_SIM_SLOT_1
+                R.id.btnSimSlot2 -> CHECK_SIM_SLOT_2
+                else -> CHECK_SIM_SLOT_ALL
+            }
+        }
+
+        init {
+            FILED_MAP["transpond_all"] = "全部转发"
+            FILED_MAP["phone_num"] = "手机号"
+            FILED_MAP["msg_content"] = "内容"
+            FILED_MAP["multi_match"] = "多重匹配"
+        }
+
+        init {
+            CHECK_MAP["is"] = "是"
+            CHECK_MAP["contain"] = "包含"
+            CHECK_MAP["startwith"] = "开头是"
+            CHECK_MAP["endwith"] = "结尾是"
+            CHECK_MAP["notis"] = "不是"
+            CHECK_MAP["regex"] = "正则匹配"
+        }
+
+        init {
+            SIM_SLOT_MAP["ALL"] = "全部"
+            SIM_SLOT_MAP["SIM1"] = "SIM1"
+            SIM_SLOT_MAP["SIM2"] = "SIM2"
+        }
+    }
+
+    private val TAG = "RuleModel"
+    var id: Long? = null
+    var filed: String? = null
+    var check: String? = null
+    var value: String? = null
+    var ruleSenderId: Long? = null
+    var time: Long? = null
+    var simSlot: String? = null
+
+    //字段分支
+    @Throws(Exception::class)
+    fun checkMsg(msg: SmsVo?): Boolean {
+
+        //检查这一行和上一行合并的结果是否命中
+        var mixChecked = false
+        if (msg != null) {
+            //先检查规则是否命中
+            when (filed) {
+                FILED_TRANSPOND_ALL -> mixChecked = true
+                FILED_PHONE_NUM -> mixChecked = checkValue(msg.mobile)
+                FILED_MSG_CONTENT -> mixChecked = checkValue(msg.content)
+                FILED_MULTI_MATCH -> mixChecked = checkRuleLines(msg, value)
+                else -> {
+                }
+            }
+        }
+        Log.i(TAG, "rule:$this checkMsg:$msg checked:$mixChecked")
+        return mixChecked
     }
 
     //内容分支
-    public boolean checkValue(String msgValue) {
-        boolean checked = false;
-
-        if (this.value != null) {
-            switch (this.check) {
-                case CHECK_IS:
-                    checked = this.value.equals(msgValue);
-                    break;
-                case CHECK_CONTAIN:
-                    if (msgValue != null) {
-                        checked = msgValue.contains(this.value);
+    fun checkValue(msgValue: String?): Boolean {
+        var checked = false
+        if (value != null) {
+            when (check) {
+                CHECK_IS -> checked = value == msgValue
+                CHECK_CONTAIN -> if (msgValue != null) {
+                    checked = msgValue.contains(value!!)
+                }
+                CHECK_START_WITH -> if (msgValue != null) {
+                    checked = msgValue.startsWith(value!!)
+                }
+                CHECK_END_WITH -> if (msgValue != null) {
+                    checked = msgValue.endsWith(value!!)
+                }
+                CHECK_REGEX -> if (msgValue != null) {
+                    try {
+                        checked = Pattern.matches(value, msgValue)
+                    } catch (e: PatternSyntaxException) {
+                        checked = false
+                        Log.d(TAG, "PatternSyntaxException: ")
+                        Log.d(TAG, "Description: " + e.description)
+                        Log.d(TAG, "Index: " + e.index)
+                        Log.d(TAG, "Message: " + e.message)
+                        Log.d(TAG, "Pattern: " + e.pattern)
                     }
-                    break;
-                case CHECK_START_WITH:
-                    if (msgValue != null) {
-                        checked = msgValue.startsWith(this.value);
-                    }
-                    break;
-                case CHECK_END_WITH:
-                    if (msgValue != null) {
-                        checked = msgValue.endsWith(this.value);
-                    }
-                    break;
-                case CHECK_REGEX:
-                    if (msgValue != null) {
-                        try {
-                            checked = Pattern.matches(this.value, msgValue);
-                        } catch (PatternSyntaxException e) {
-                            checked = false;
-                            Log.d(TAG, "PatternSyntaxException: ");
-                            Log.d(TAG, "Description: " + e.getDescription());
-                            Log.d(TAG, "Index: " + e.getIndex());
-                            Log.d(TAG, "Message: " + e.getMessage());
-                            Log.d(TAG, "Pattern: " + e.getPattern());
-                        }
-                    }
-                    break;
-                default:
-                    break;
+                }
+                else -> {
+                }
             }
         }
-
-        Log.i(TAG, "checkValue " + msgValue + " " + this.check + " " + this.value + " checked:" + checked);
-
-        return checked;
-
+        Log.i(TAG, "checkValue " + msgValue + " " + check + " " + value + " checked:" + checked)
+        return checked
     }
 
-    public String getRuleMatch() {
-        String SimStr = SIM_SLOT_MAP.get(simSlot) + "卡 ";
-        if (filed == null || filed.equals(FILED_TRANSPOND_ALL)) {
-            return SimStr + "全部 转发到 ";
-        } else {
-            return SimStr + "当 " + FILED_MAP.get(filed) + " " + CHECK_MAP.get(check) + " " + value + " 转发到 ";
+    val ruleMatch: String
+        get() {
+            val SimStr = SIM_SLOT_MAP[simSlot].toString() + "卡 "
+            return if (filed == null || filed == FILED_TRANSPOND_ALL) {
+                SimStr + "全部 转发到 "
+            } else {
+                SimStr + "当 " + FILED_MAP[filed] + " " + CHECK_MAP[check] + " " + value + " 转发到 "
+            }
         }
-    }
-
-    public Long getRuleSenderId() {
-        return senderId;
-    }
-
-    public int getRuleFiledCheckId() {
-        switch (filed) {
-            case FILED_MSG_CONTENT:
-                return R.id.btnContent;
-            case FILED_PHONE_NUM:
-                return R.id.btnPhone;
-            case FILED_MULTI_MATCH:
-                return R.id.btnMultiMatch;
-            default:
-                return R.id.btnTranspondAll;
+    val ruleFiledCheckId: Int
+        get() = when (filed) {
+            FILED_MSG_CONTENT -> R.id.btnContent
+            FILED_PHONE_NUM -> R.id.btnPhone
+            FILED_MULTI_MATCH -> R.id.btnMultiMatch
+            else -> R.id.btnTranspondAll
         }
-    }
-
-    public int getRuleCheckCheckId() {
-        switch (check) {
-            case CHECK_CONTAIN:
-                return R.id.btnContain;
-            case CHECK_START_WITH:
-                return R.id.btnStartWith;
-            case CHECK_END_WITH:
-                return R.id.btnEndWith;
-            case CHECK_REGEX:
-                return R.id.btnRegex;
-            case CHECK_NOT_IS:
-                return R.id.btnNotIs;
-            default:
-                return R.id.btnIs;
+    val ruleCheckCheckId: Int
+        get() = when (check) {
+            CHECK_CONTAIN -> R.id.btnContain
+            CHECK_START_WITH -> R.id.btnStartWith
+            CHECK_END_WITH -> R.id.btnEndWith
+            CHECK_REGEX -> R.id.btnRegex
+            CHECK_NOT_IS -> R.id.btnNotIs
+            else -> R.id.btnIs
         }
-    }
-
-    public int getRuleSimSlotCheckId() {
-        switch (simSlot) {
-            case CHECK_SIM_SLOT_1:
-                return R.id.btnSimSlot1;
-            case CHECK_SIM_SLOT_2:
-                return R.id.btnSimSlot2;
-            default:
-                return R.id.btnSimSlotAll;
+    val ruleSimSlotCheckId: Int
+        get() = when (simSlot) {
+            CHECK_SIM_SLOT_1 -> R.id.btnSimSlot1
+            CHECK_SIM_SLOT_2 -> R.id.btnSimSlot2
+            else -> R.id.btnSimSlotAll
         }
-    }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getSenderId() {
-        return senderId;
-    }
-
-    public void setSenderId(Long senderId) {
-        this.senderId = senderId;
-    }
-
-    public Long getTime() {
-        return time;
-    }
-
-    public void setTime(Long time) {
-        this.time = time;
-    }
-
-    public String getFiled() {
-        return filed;
-    }
-
-    public void setFiled(String filed) {
-        this.filed = filed;
-    }
-
-    public String getSimSlot() {
-        return simSlot;
-    }
-
-    public void setSimSlot(String simSlot) {
-        this.simSlot = simSlot;
-    }
-
-    public String getCheck() {
-        return check;
-    }
-
-    public void setCheck(String check) {
-        this.check = check;
-    }
-
-    public String getValue() {
-        return value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
-    }
-
-
-    @Override
-    public String toString() {
+    override fun toString(): String {
         return "RuleModel{" +
                 "id=" + id +
                 ", filed='" + filed + '\'' +
                 ", check='" + check + '\'' +
                 ", value='" + value + '\'' +
-                ", senderId=" + senderId +
+                ", senderId=" + ruleSenderId +
                 ", time=" + time +
-                '}';
+                '}'
     }
 }

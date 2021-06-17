@@ -1,54 +1,26 @@
-package com.idormy.sms.forwarder.model.vo;
+package com.idormy.sms.forwarder.model.vo
 
-import com.idormy.sms.forwarder.R;
+import com.idormy.sms.forwarder.R
+import java.io.Serializable
 
-import java.io.Serializable;
+class SmsSettingVo : Serializable {
+    var simSlot = 0
+    var mobiles: String? = null
+    var onlyNoNetwork: Boolean? = null
 
-public class SmsSettingVo implements Serializable {
-    private int simSlot;
-    private String mobiles;
-    private Boolean onlyNoNetwork;
-
-    public SmsSettingVo() {
+    constructor() {}
+    constructor(simSlot: Int, mobiles: String?, onlyNoNetwork: Boolean?) {
+        this.simSlot = simSlot
+        this.mobiles = mobiles
+        this.onlyNoNetwork = onlyNoNetwork
     }
 
-    public SmsSettingVo(int simSlot, String mobiles, Boolean onlyNoNetwork) {
-        this.simSlot = simSlot;
-        this.mobiles = mobiles;
-        this.onlyNoNetwork = onlyNoNetwork;
-    }
-
-    public int getSimSlot() {
-        return simSlot;
-    }
-
-    public void setSimSlot(int simSlot) {
-        this.simSlot = simSlot;
-    }
-
-    public String getMobiles() {
-        return mobiles;
-    }
-
-    public void setMobiles(String mobiles) {
-        this.mobiles = mobiles;
-    }
-
-    public Boolean getOnlyNoNetwork() {
-        return onlyNoNetwork;
-    }
-
-    public void setOnlyNoNetwork(Boolean onlyNoNetwork) {
-        this.onlyNoNetwork = onlyNoNetwork;
-    }
-
-    public int getSmsSimSlotCheckId() {
-        if (simSlot == 1) {
-            return R.id.btnSmsSimSlot1;
+    val smsSimSlotCheckId: Int
+        get() = if (simSlot == 1) {
+            R.id.btnSmsSimSlot1
         } else if (simSlot == 2) {
-            return R.id.btnSmsSimSlot2;
+            R.id.btnSmsSimSlot2
         } else {
-            return R.id.btnSmsSimSlotOrg;
+            R.id.btnSmsSimSlotOrg
         }
-    }
 }

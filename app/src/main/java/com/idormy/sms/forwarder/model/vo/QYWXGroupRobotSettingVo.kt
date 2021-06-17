@@ -1,22 +1,12 @@
-package com.idormy.sms.forwarder.model.vo;
+package com.idormy.sms.forwarder.model.vo
 
-import java.io.Serializable;
+import java.io.Serializable
 
-public class QYWXGroupRobotSettingVo implements Serializable {
-    private String webHook;
+class QYWXGroupRobotSettingVo : Serializable {
+    var webHook: String? = null
 
-    public QYWXGroupRobotSettingVo() {
-    }
-
-    public QYWXGroupRobotSettingVo(String webHook) {
-        this.webHook = webHook;
-    }
-
-    public String getWebHook() {
-        return webHook;
-    }
-
-    public void setWebHook(String webHook) {
-        this.webHook = webHook;
+    constructor() {}
+    constructor(webHook: String?) {
+        this.webHook = webHook
     }
 }

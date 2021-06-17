@@ -1,1203 +1,1086 @@
-package com.idormy.sms.forwarder;
+package com.idormy.sms.forwarder
 
-import android.content.DialogInterface;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
-import android.util.Log;
-import android.view.View;
-import android.widget.AdapterView;
-import android.widget.Button;
-import android.widget.CompoundButton;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.ListView;
-import android.widget.RadioGroup;
-import android.widget.Switch;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.annotation.SuppressLint
+import android.os.Bundle
+import android.os.Handler
+import android.os.Message
+import android.util.Log
+import android.view.View
+import android.widget.*
+import android.widget.AdapterView.OnItemClickListener
+import android.widget.AdapterView.OnItemLongClickListener
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SwitchCompat
+import com.alibaba.fastjson.JSON
+import com.idormy.sms.forwarder.adapter.SenderAdapter
+import com.idormy.sms.forwarder.model.SenderModel
+import com.idormy.sms.forwarder.model.vo.*
+import com.idormy.sms.forwarder.sender.*
+import com.umeng.analytics.MobclickAgent
+import java.text.SimpleDateFormat
+import java.util.*
 
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-
-import com.alibaba.fastjson.JSON;
-import com.idormy.sms.forwarder.adapter.SenderAdapter;
-import com.idormy.sms.forwarder.model.SenderModel;
-import com.idormy.sms.forwarder.model.vo.BarkSettingVo;
-import com.idormy.sms.forwarder.model.vo.DingDingSettingVo;
-import com.idormy.sms.forwarder.model.vo.EmailSettingVo;
-import com.idormy.sms.forwarder.model.vo.QYWXAppSettingVo;
-import com.idormy.sms.forwarder.model.vo.QYWXGroupRobotSettingVo;
-import com.idormy.sms.forwarder.model.vo.ServerChanSettingVo;
-import com.idormy.sms.forwarder.model.vo.SmsSettingVo;
-import com.idormy.sms.forwarder.model.vo.TelegramSettingVo;
-import com.idormy.sms.forwarder.model.vo.WebNotifySettingVo;
-import com.idormy.sms.forwarder.sender.SenderBarkMsg;
-import com.idormy.sms.forwarder.sender.SenderDingdingMsg;
-import com.idormy.sms.forwarder.sender.SenderMailMsg;
-import com.idormy.sms.forwarder.sender.SenderQyWxAppMsg;
-import com.idormy.sms.forwarder.sender.SenderQyWxGroupRobotMsg;
-import com.idormy.sms.forwarder.sender.SenderServerChanMsg;
-import com.idormy.sms.forwarder.sender.SenderSmsMsg;
-import com.idormy.sms.forwarder.sender.SenderTelegramMsg;
-import com.idormy.sms.forwarder.sender.SenderUtil;
-import com.idormy.sms.forwarder.sender.SenderWebNotifyMsg;
-import com.umeng.analytics.MobclickAgent;
-
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
-import static com.idormy.sms.forwarder.model.SenderModel.STATUS_ON;
-import static com.idormy.sms.forwarder.model.SenderModel.TYPE_BARK;
-import static com.idormy.sms.forwarder.model.SenderModel.TYPE_DINGDING;
-import static com.idormy.sms.forwarder.model.SenderModel.TYPE_EMAIL;
-import static com.idormy.sms.forwarder.model.SenderModel.TYPE_QYWX_APP;
-import static com.idormy.sms.forwarder.model.SenderModel.TYPE_QYWX_GROUP_ROBOT;
-import static com.idormy.sms.forwarder.model.SenderModel.TYPE_SERVER_CHAN;
-import static com.idormy.sms.forwarder.model.SenderModel.TYPE_SMS;
-import static com.idormy.sms.forwarder.model.SenderModel.TYPE_TELEGRAM;
-import static com.idormy.sms.forwarder.model.SenderModel.TYPE_WEB_NOTIFY;
-
-public class SenderActivity extends AppCompatActivity {
-
-    public static final int NOTIFY = 0x9731993;
-    private String TAG = "SenderActivity";
+class SenderActivity : AppCompatActivity() {
     // 用于存储数据
-    private List<SenderModel> senderModels = new ArrayList<>();
-    private SenderAdapter adapter;
+    private var senderModels: MutableList<SenderModel> = mutableListOf()
+    private var adapter: SenderAdapter? = null
+
     //消息处理者,创建一个Handler的子类对象,目的是重写Handler的处理消息的方法(handleMessage())
-    private Handler handler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case NOTIFY:
-                    Toast.makeText(SenderActivity.this, msg.getData().getString("DATA"), Toast.LENGTH_LONG).show();
-                    break;
+    private val handler: Handler = @SuppressLint("HandlerLeak")
+    object : Handler() {
+        override fun handleMessage(msg: Message) {
+            when (msg.what) {
+                NOTIFY -> Toast.makeText(
+                    this@SenderActivity,
+                    msg.data.getString("DATA"),
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
-    };
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        Log.d(TAG, "oncreate");
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_sender);
-        SenderUtil.init(SenderActivity.this);
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        Log.d(TAG, "onStart");
+    override fun onCreate(savedInstanceState: Bundle?) {
+        Log.d(TAG, "oncreate")
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_sender)
+        SenderUtil.init()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        Log.d(TAG, "onStart")
 
         //是否关闭页面提示
-        TextView help_tip = findViewById(R.id.help_tip);
-        help_tip.setVisibility(MyApplication.showHelpTip ? View.VISIBLE : View.GONE);
+        val helpTip = findViewById<TextView>(R.id.help_tip)
+        helpTip.visibility = if (MyApplication.showHelpTip) View.VISIBLE else View.GONE
 
         // 先拿到数据并放在适配器上
-        initSenders(); //初始化数据
-        adapter = new SenderAdapter(SenderActivity.this, R.layout.item_sender, senderModels);
+        initSenders() //初始化数据
+        adapter = SenderAdapter(this@SenderActivity, R.layout.item_sender, senderModels)
 
         // 将适配器上的数据传递给listView
-        ListView listView = findViewById(R.id.list_view_sender);
-        listView.setAdapter(adapter);
+        val listView = findViewById<ListView>(R.id.list_view_sender)
+        listView.adapter = adapter
 
         // 为ListView注册一个监听器，当用户点击了ListView中的任何一个子项时，就会回调onItemClick()方法
         // 在这个方法中可以通过position参数判断出用户点击的是那一个子项
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                SenderModel senderModel = senderModels.get(position);
-                Log.d(TAG, "onItemClick: " + senderModel);
-
-                switch (senderModel.getType()) {
-                    case TYPE_DINGDING:
-                        setDingDing(senderModel);
-                        break;
-                    case TYPE_EMAIL:
-                        setEmail(senderModel);
-                        break;
-                    case TYPE_BARK:
-                        setBark(senderModel);
-                        break;
-                    case TYPE_WEB_NOTIFY:
-                        setWebNotify(senderModel);
-                        break;
-                    case TYPE_QYWX_GROUP_ROBOT:
-                        setQYWXGroupRobot(senderModel);
-                        break;
-                    case TYPE_QYWX_APP:
-                        setQYWXApp(senderModel);
-                        break;
-                    case TYPE_SERVER_CHAN:
-                        setServerChan(senderModel);
-                        break;
-                    case TYPE_TELEGRAM:
-                        setTelegram(senderModel);
-                        break;
-                    case TYPE_SMS:
-                        setSms(senderModel);
-                        break;
-                    default:
-                        Toast.makeText(SenderActivity.this, "异常的发送方类型，自动删除！", Toast.LENGTH_LONG).show();
-                        if (senderModel != null) {
-                            SenderUtil.delSender(senderModel.getId());
-                            initSenders();
-                            adapter.del(senderModels);
-                        }
-                        break;
+        listView.onItemClickListener = OnItemClickListener { _, _, position, _ ->
+            val senderModel = senderModels[position]
+            Log.d(TAG, "onItemClick: $senderModel")
+            when (senderModel.type) {
+                SenderModel.TYPE_DINGDING -> setDingDing(senderModel)
+                SenderModel.TYPE_EMAIL -> setEmail(senderModel)
+                SenderModel.TYPE_BARK -> setBark(senderModel)
+                SenderModel.TYPE_WEB_NOTIFY -> setWebNotify(senderModel)
+                SenderModel.TYPE_QYWX_GROUP_ROBOT -> setQYWXGroupRobot(senderModel)
+                SenderModel.TYPE_QYWX_APP -> setQYWXApp(senderModel)
+                SenderModel.TYPE_SERVER_CHAN -> setServerChan(senderModel)
+                SenderModel.TYPE_TELEGRAM -> setTelegram(senderModel)
+                SenderModel.TYPE_SMS -> setSms(senderModel)
+                else -> {
+                    Toast.makeText(this@SenderActivity, "异常的发送方类型，自动删除！", Toast.LENGTH_LONG).show()
+                    if (senderModel != null) {
+                        SenderUtil.delSender(senderModel.id)
+                        initSenders()
+                        adapter!!.del(senderModels)
+                    }
                 }
-
             }
-        });
-
-        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
-                //定义AlertDialog.Builder对象，当长按列表项的时候弹出确认删除对话框
-                AlertDialog.Builder builder = new AlertDialog.Builder(SenderActivity.this);
-
-                builder.setMessage("确定删除?");
-                builder.setTitle("提示");
+        }
+        listView.onItemLongClickListener =
+            OnItemLongClickListener { _, _, position, _ -> //定义AlertDialog.Builder对象，当长按列表项的时候弹出确认删除对话框
+                val builder = AlertDialog.Builder(this@SenderActivity)
+                builder.setMessage("确定删除?")
+                builder.setTitle("提示")
 
                 //添加AlertDialog.Builder对象的setPositiveButton()方法
-                builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        SenderUtil.delSender(senderModels.get(position).getId());
-                        initSenders();
-                        adapter.del(senderModels);
-                        Toast.makeText(getBaseContext(), "删除列表项", Toast.LENGTH_SHORT).show();
-                    }
-                });
+                builder.setPositiveButton("确定") { _, _ ->
+                    SenderUtil.delSender(senderModels[position].id)
+                    initSenders()
+                    adapter!!.del(senderModels)
+                    Toast.makeText(baseContext, "删除列表项", Toast.LENGTH_SHORT).show()
+                }
 
                 //添加AlertDialog.Builder对象的setNegativeButton()方法
-                builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
-
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-
-                    }
-                });
-
-                builder.create().show();
-                return true;
+                builder.setNegativeButton("取消") { _, _ -> }
+                builder.create().show()
+                true
             }
-        });
     }
 
     // 初始化数据
-    private void initSenders() {
-        senderModels = SenderUtil.getSender(null, null);
+    private fun initSenders() {
+        senderModels = SenderUtil.getSender(null, null) as MutableList<SenderModel>
     }
 
-    public void addSender(View view) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(SenderActivity.this);
-        builder.setTitle("选择发送方类型");
-        builder.setItems(R.array.add_sender_menu, new DialogInterface.OnClickListener() {//添加列表
-            @Override
-            public void onClick(DialogInterface dialogInterface, int which) {
-                switch (which) {
-                    case TYPE_DINGDING:
-                        setDingDing(null);
-                        break;
-                    case TYPE_EMAIL:
-                        setEmail(null);
-                        break;
-                    case TYPE_BARK:
-                        setBark(null);
-                        break;
-                    case TYPE_WEB_NOTIFY:
-                        setWebNotify(null);
-                        break;
-                    case TYPE_QYWX_GROUP_ROBOT:
-                        setQYWXGroupRobot(null);
-                        break;
-                    case TYPE_QYWX_APP:
-                        setQYWXApp(null);
-                        break;
-                    case TYPE_SERVER_CHAN:
-                        setServerChan(null);
-                        break;
-                    case TYPE_TELEGRAM:
-                        setTelegram(null);
-                        break;
-                    case TYPE_SMS:
-                        setSms(null);
-                        break;
-                    default:
-                        Toast.makeText(SenderActivity.this, "暂不支持这种转发！", Toast.LENGTH_LONG).show();
-                        break;
-                }
-            }
-        });
-        builder.show();
-        Log.d(TAG, "setDingDing show" + senderModels.size());
-    }
+    fun addSender(view: View?) {
+        val builder = AlertDialog.Builder(this@SenderActivity)
+        builder.setTitle("选择发送方类型")
+        builder.setItems(R.array.add_sender_menu) { _, which ->
 
-    private void setDingDing(final SenderModel senderModel) {
-        DingDingSettingVo dingDingSettingVo = null;
-        //try phrase json setting
-        if (senderModel != null) {
-            String jsonSettingStr = senderModel.getJsonSetting();
-            if (jsonSettingStr != null) {
-                dingDingSettingVo = JSON.parseObject(jsonSettingStr, DingDingSettingVo.class);
+            //添加列表
+            when (which) {
+                SenderModel.TYPE_DINGDING -> setDingDing(null)
+                SenderModel.TYPE_EMAIL -> setEmail(null)
+                SenderModel.TYPE_BARK -> setBark(null)
+                SenderModel.TYPE_WEB_NOTIFY -> setWebNotify(null)
+                SenderModel.TYPE_QYWX_GROUP_ROBOT -> setQYWXGroupRobot(null)
+                SenderModel.TYPE_QYWX_APP -> setQYWXApp(null)
+                SenderModel.TYPE_SERVER_CHAN -> setServerChan(null)
+                SenderModel.TYPE_TELEGRAM -> setTelegram(null)
+                SenderModel.TYPE_SMS -> setSms(null)
+                else -> Toast.makeText(this@SenderActivity, "暂不支持这种转发！", Toast.LENGTH_LONG).show()
             }
         }
-        final AlertDialog.Builder alertDialog71 = new AlertDialog.Builder(SenderActivity.this);
-        View view1 = View.inflate(SenderActivity.this, R.layout.alert_dialog_setview_dingding, null);
-
-        final EditText editTextDingdingName = view1.findViewById(R.id.editTextDingdingName);
-        if (senderModel != null)
-            editTextDingdingName.setText(senderModel.getName());
-        final EditText editTextDingdingToken = view1.findViewById(R.id.editTextDingdingToken);
-        if (dingDingSettingVo != null)
-            editTextDingdingToken.setText(dingDingSettingVo.getToken());
-        final EditText editTextDingdingSecret = view1.findViewById(R.id.editTextDingdingSecret);
-        if (dingDingSettingVo != null)
-            editTextDingdingSecret.setText(dingDingSettingVo.getSecret());
-        final EditText editTextDingdingAtMobiles = view1.findViewById(R.id.editTextDingdingAtMobiles);
-        if (dingDingSettingVo != null && dingDingSettingVo.getAtMobils() != null)
-            editTextDingdingAtMobiles.setText(dingDingSettingVo.getAtMobils());
-        final Switch switchDingdingAtAll = view1.findViewById(R.id.switchDingdingAtAll);
-        if (dingDingSettingVo != null && dingDingSettingVo.getAtAll() != null)
-            switchDingdingAtAll.setChecked(dingDingSettingVo.getAtAll());
-
-        Button buttondingdingok = view1.findViewById(R.id.buttondingdingok);
-        Button buttondingdingdel = view1.findViewById(R.id.buttondingdingdel);
-        Button buttondingdingtest = view1.findViewById(R.id.buttondingdingtest);
-        alertDialog71
-                .setTitle(R.string.setdingdingtitle)
-                .setIcon(R.mipmap.dingding)
-                .setView(view1)
-                .create();
-        final AlertDialog show = alertDialog71.show();
-        buttondingdingok.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                if (senderModel == null) {
-                    SenderModel newSenderModel = new SenderModel();
-                    newSenderModel.setName(editTextDingdingName.getText().toString());
-                    newSenderModel.setType(TYPE_DINGDING);
-                    newSenderModel.setStatus(STATUS_ON);
-                    DingDingSettingVo dingDingSettingVonew = new DingDingSettingVo(
-                            editTextDingdingToken.getText().toString(),
-                            editTextDingdingSecret.getText().toString(),
-                            editTextDingdingAtMobiles.getText().toString(),
-                            switchDingdingAtAll.isChecked());
-                    newSenderModel.setJsonSetting(JSON.toJSONString(dingDingSettingVonew));
-                    SenderUtil.addSender(newSenderModel);
-                    initSenders();
-                    adapter.add(senderModels);
-//                    adapter.add(newSenderModel);
-                } else {
-                    senderModel.setName(editTextDingdingName.getText().toString());
-                    senderModel.setType(TYPE_DINGDING);
-                    senderModel.setStatus(STATUS_ON);
-                    DingDingSettingVo dingDingSettingVonew = new DingDingSettingVo(
-                            editTextDingdingToken.getText().toString(),
-                            editTextDingdingSecret.getText().toString(),
-                            editTextDingdingAtMobiles.getText().toString(),
-                            switchDingdingAtAll.isChecked());
-                    senderModel.setJsonSetting(JSON.toJSONString(dingDingSettingVonew));
-                    SenderUtil.updateSender(senderModel);
-                    initSenders();
-                    adapter.update(senderModels);
-//                    adapter.update(senderModel,position);
-                }
-
-
-                show.dismiss();
-
-
-            }
-        });
-        buttondingdingdel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (senderModel != null) {
-                    SenderUtil.delSender(senderModel.getId());
-                    initSenders();
-                    adapter.del(senderModels);
-//                    adapter.del(position);
-
-                }
-                show.dismiss();
-            }
-        });
-        buttondingdingtest.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String token = editTextDingdingToken.getText().toString();
-                String secret = editTextDingdingSecret.getText().toString();
-                String atMobiles = editTextDingdingAtMobiles.getText().toString();
-                Boolean atAll = switchDingdingAtAll.isChecked();
-                if (token != null && !token.isEmpty()) {
-                    try {
-                        SenderDingdingMsg.sendMsg(0, handler, token, secret, atMobiles, atAll, "测试内容(content)@" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())));
-                    } catch (Exception e) {
-                        Toast.makeText(SenderActivity.this, "发送失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
-                        e.printStackTrace();
-                    }
-                } else {
-                    Toast.makeText(SenderActivity.this, "token 不能为空", Toast.LENGTH_LONG).show();
-                }
-            }
-        });
+        builder.show()
+        Log.d(TAG, "setDingDing show" + senderModels.size)
     }
 
-    private void setEmail(final SenderModel senderModel) {
-        EmailSettingVo emailSettingVo = null;
+    private fun setDingDing(senderModel: SenderModel?) {
+        var dingDingSettingVo: DingDingSettingVo? = null
         //try phrase json setting
         if (senderModel != null) {
-            String jsonSettingStr = senderModel.getJsonSetting();
+            val jsonSettingStr = senderModel.jsonSetting
             if (jsonSettingStr != null) {
-                emailSettingVo = JSON.parseObject(jsonSettingStr, EmailSettingVo.class);
+                dingDingSettingVo = JSON.parseObject(jsonSettingStr, DingDingSettingVo::class.java)
             }
         }
-
-        final AlertDialog.Builder alertDialog71 = new AlertDialog.Builder(SenderActivity.this);
-        View view1 = View.inflate(SenderActivity.this, R.layout.alert_dialog_setview_email, null);
-
-        final EditText editTextEmailName = view1.findViewById(R.id.editTextEmailName);
-        if (senderModel != null) editTextEmailName.setText(senderModel.getName());
-        final EditText editTextEmailHost = view1.findViewById(R.id.editTextEmailHost);
-        if (emailSettingVo != null) editTextEmailHost.setText(emailSettingVo.getHost());
-        final EditText editTextEmailPort = view1.findViewById(R.id.editTextEmailPort);
-        if (emailSettingVo != null) editTextEmailPort.setText(emailSettingVo.getPort());
-
-        final Switch switchEmailSSl = view1.findViewById(R.id.switchEmailSSl);
-        if (emailSettingVo != null) switchEmailSSl.setChecked(emailSettingVo.getSsl());
-        final EditText editTextEmailFromAdd = view1.findViewById(R.id.editTextEmailFromAdd);
-        if (emailSettingVo != null) editTextEmailFromAdd.setText(emailSettingVo.getFromEmail());
-        final EditText editTextEmailNickname = view1.findViewById(R.id.editTextEmailNickname);
-        if (emailSettingVo != null) editTextEmailNickname.setText(emailSettingVo.getNickname());
-        final EditText editTextEmailPsw = view1.findViewById(R.id.editTextEmailPsw);
-        if (emailSettingVo != null) editTextEmailPsw.setText(emailSettingVo.getPwd());
-        final EditText editTextEmailToAdd = view1.findViewById(R.id.editTextEmailToAdd);
-        if (emailSettingVo != null) editTextEmailToAdd.setText(emailSettingVo.getToEmail());
-
-        Button buttonemailok = view1.findViewById(R.id.buttonemailok);
-        Button buttonemaildel = view1.findViewById(R.id.buttonemaildel);
-        Button buttonemailtest = view1.findViewById(R.id.buttonemailtest);
+        val alertDialog71 = AlertDialog.Builder(this@SenderActivity)
+        val view1 = View.inflate(this@SenderActivity, R.layout.alert_dialog_setview_dingding, null)
+        val editTextDingdingName = view1.findViewById<EditText>(R.id.editTextDingdingName)
+        if (senderModel != null) editTextDingdingName.setText(senderModel.name)
+        val editTextDingdingToken = view1.findViewById<EditText>(R.id.editTextDingdingToken)
+        if (dingDingSettingVo != null) editTextDingdingToken.setText(dingDingSettingVo.token)
+        val editTextDingdingSecret = view1.findViewById<EditText>(R.id.editTextDingdingSecret)
+        if (dingDingSettingVo != null) editTextDingdingSecret.setText(dingDingSettingVo.secret)
+        val editTextDingdingAtMobiles = view1.findViewById<EditText>(R.id.editTextDingdingAtMobiles)
+        if (dingDingSettingVo?.atMobils != null) editTextDingdingAtMobiles.setText(
+            dingDingSettingVo.atMobils
+        )
+        val switchDingDingAtAll = view1.findViewById<SwitchCompat>(R.id.switchDingDingAtAll)
+        if (dingDingSettingVo?.atAll != null) switchDingDingAtAll.isChecked =
+            dingDingSettingVo.atAll!!
+        val buttonDingDingOk = view1.findViewById<Button>(R.id.buttondingdingok)
+        val buttonDingDingDel = view1.findViewById<Button>(R.id.buttondingdingdel)
+        val buttonDingDingTest = view1.findViewById<Button>(R.id.buttondingdingtest)
         alertDialog71
-                .setTitle(R.string.setemailtitle)
-                .setIcon(R.mipmap.email)
-                .setView(view1)
-                .create();
-        final AlertDialog show = alertDialog71.show();
-
-        buttonemailok.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                if (senderModel == null) {
-                    SenderModel newSenderModel = new SenderModel();
-                    newSenderModel.setName(editTextEmailName.getText().toString());
-                    newSenderModel.setType(TYPE_EMAIL);
-                    newSenderModel.setStatus(STATUS_ON);
-                    EmailSettingVo emailSettingVonew = new EmailSettingVo(
-                            editTextEmailHost.getText().toString(),
-                            editTextEmailPort.getText().toString(),
-                            switchEmailSSl.isChecked(),
-                            editTextEmailFromAdd.getText().toString(),
-                            editTextEmailNickname.getText().toString(),
-                            editTextEmailPsw.getText().toString(),
-                            editTextEmailToAdd.getText().toString()
-                    );
-                    newSenderModel.setJsonSetting(JSON.toJSONString(emailSettingVonew));
-                    SenderUtil.addSender(newSenderModel);
-                    initSenders();
-                    adapter.add(senderModels);
-                } else {
-                    senderModel.setName(editTextEmailName.getText().toString());
-                    senderModel.setType(TYPE_EMAIL);
-                    senderModel.setStatus(STATUS_ON);
-                    EmailSettingVo emailSettingVonew = new EmailSettingVo(
-                            editTextEmailHost.getText().toString(),
-                            editTextEmailPort.getText().toString(),
-                            switchEmailSSl.isChecked(),
-                            editTextEmailFromAdd.getText().toString(),
-                            editTextEmailNickname.getText().toString(),
-                            editTextEmailPsw.getText().toString(),
-                            editTextEmailToAdd.getText().toString()
-                    );
-                    senderModel.setJsonSetting(JSON.toJSONString(emailSettingVonew));
-                    SenderUtil.updateSender(senderModel);
-                    initSenders();
-                    adapter.update(senderModels);
-                }
-
-                show.dismiss();
-
-
+            .setTitle(R.string.setdingdingtitle)
+            .setIcon(R.mipmap.dingding)
+            .setView(view1)
+            .create()
+        val show = alertDialog71.show()
+        buttonDingDingOk.setOnClickListener {
+            if (senderModel == null) {
+                val newSenderModel = SenderModel()
+                newSenderModel.name = editTextDingdingName.text.toString()
+                newSenderModel.type = SenderModel.TYPE_DINGDING
+                newSenderModel.setStatus(SenderModel.STATUS_ON)
+                val dingDingSettingVonew = DingDingSettingVo(
+                    editTextDingdingToken.text.toString(),
+                    editTextDingdingSecret.text.toString(),
+                    editTextDingdingAtMobiles.text.toString(),
+                    switchDingDingAtAll.isChecked
+                )
+                newSenderModel.jsonSetting = JSON.toJSONString(dingDingSettingVonew)
+                SenderUtil.addSender(newSenderModel)
+                initSenders()
+                adapter!!.add(senderModels)
+                //                    adapter.add(newSenderModel);
+            } else {
+                senderModel.name = editTextDingdingName.text.toString()
+                senderModel.type = SenderModel.TYPE_DINGDING
+                senderModel.setStatus(SenderModel.STATUS_ON)
+                val dingDingSettingVonew = DingDingSettingVo(
+                    editTextDingdingToken.text.toString(),
+                    editTextDingdingSecret.text.toString(),
+                    editTextDingdingAtMobiles.text.toString(),
+                    switchDingDingAtAll.isChecked
+                )
+                senderModel.jsonSetting = JSON.toJSONString(dingDingSettingVonew)
+                SenderUtil.updateSender(senderModel)
+                initSenders()
+                adapter!!.update(senderModels)
+                //                    adapter.update(senderModel,position);
             }
-        });
-        buttonemaildel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (senderModel != null) {
-                    SenderUtil.delSender(senderModel.getId());
-                    initSenders();
-                    adapter.del(senderModels);
-                }
-                show.dismiss();
+            show.dismiss()
+        }
+        buttonDingDingDel.setOnClickListener {
+            if (senderModel != null) {
+                SenderUtil.delSender(senderModel.id)
+                initSenders()
+                adapter!!.del(senderModels)
+                //                    adapter.del(position);
             }
-        });
-        buttonemailtest.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String host = editTextEmailHost.getText().toString();
-                String port = editTextEmailPort.getText().toString();
-                Boolean ssl = switchEmailSSl.isChecked();
-                String fromemail = editTextEmailFromAdd.getText().toString();
-                String pwd = editTextEmailPsw.getText().toString();
-                String toemail = editTextEmailToAdd.getText().toString();
-
-                String nickname = editTextEmailNickname.getText().toString();
-                if (nickname == null || nickname.equals("")) {
-                    nickname = "SmsForwarder";
+            show.dismiss()
+        }
+        buttonDingDingTest.setOnClickListener {
+            val token = editTextDingdingToken.text.toString()
+            val secret = editTextDingdingSecret.text.toString()
+            val atMobiles = editTextDingdingAtMobiles.text.toString()
+            val atAll = switchDingDingAtAll.isChecked
+            if (token != null && token.isNotEmpty()) {
+                try {
+                    SenderDingDingMsg.sendMsg(
+                        0,
+                        handler,
+                        token,
+                        secret,
+                        atMobiles,
+                        atAll,
+                        "测试内容(content)@" + SimpleDateFormat(
+                            "yyyy-MM-dd HH:mm:ss",
+                            Locale.getDefault()
+                        ).format(
+                            Date()
+                        )
+                    )
+                } catch (e: Exception) {
+                    Toast.makeText(this@SenderActivity, "发送失败：" + e.message, Toast.LENGTH_LONG)
+                        .show()
+                    e.printStackTrace()
                 }
-
-                if (!host.isEmpty() && !port.isEmpty() && !fromemail.isEmpty() && !pwd.isEmpty() && !toemail.isEmpty()) {
-                    try {
-                        SenderMailMsg.sendEmail(0, handler, host, port, ssl, fromemail, nickname, pwd, toemail, "SmsForwarder Title", "测试内容(content)@" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())));
-                    } catch (Exception e) {
-                        Toast.makeText(SenderActivity.this, "发送失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
-                        e.printStackTrace();
-                    }
-                } else {
-                    Toast.makeText(SenderActivity.this, "邮箱参数不完整", Toast.LENGTH_LONG).show();
-                }
+            } else {
+                Toast.makeText(this@SenderActivity, "token 不能为空", Toast.LENGTH_LONG).show()
             }
-        });
+        }
     }
 
-    private void setBark(final SenderModel senderModel) {
-        BarkSettingVo barkSettingVo = null;
+    private fun setEmail(senderModel: SenderModel?) {
+        var emailSettingVo: EmailSettingVo? = null
         //try phrase json setting
         if (senderModel != null) {
-            String jsonSettingStr = senderModel.getJsonSetting();
+            val jsonSettingStr = senderModel.jsonSetting
             if (jsonSettingStr != null) {
-                barkSettingVo = JSON.parseObject(jsonSettingStr, BarkSettingVo.class);
+                emailSettingVo = JSON.parseObject(jsonSettingStr, EmailSettingVo::class.java)
             }
         }
-
-        final AlertDialog.Builder alertDialog71 = new AlertDialog.Builder(SenderActivity.this);
-        View view1 = View.inflate(SenderActivity.this, R.layout.alert_dialog_setview_bark, null);
-
-        final EditText editTextBarkName = view1.findViewById(R.id.editTextBarkName);
-        if (senderModel != null) editTextBarkName.setText(senderModel.getName());
-        final EditText editTextBarkServer = view1.findViewById(R.id.editTextBarkServer);
-        if (barkSettingVo != null) editTextBarkServer.setText(barkSettingVo.getServer());
-
-        Button buttonBarkOk = view1.findViewById(R.id.buttonBarkOk);
-        Button buttonBarkDel = view1.findViewById(R.id.buttonBarkDel);
-        Button buttonBarkTest = view1.findViewById(R.id.buttonBarkTest);
+        val alertDialog71 = AlertDialog.Builder(this@SenderActivity)
+        val view1 = View.inflate(this@SenderActivity, R.layout.alert_dialog_setview_email, null)
+        val editTextEmailName = view1.findViewById<EditText>(R.id.editTextEmailName)
+        if (senderModel != null) editTextEmailName.setText(senderModel.name)
+        val editTextEmailHost = view1.findViewById<EditText>(R.id.editTextEmailHost)
+        if (emailSettingVo != null) editTextEmailHost.setText(emailSettingVo.host)
+        val editTextEmailPort = view1.findViewById<EditText>(R.id.editTextEmailPort)
+        if (emailSettingVo != null) editTextEmailPort.setText(emailSettingVo.port)
+        val switchEmailSSl = view1.findViewById<SwitchCompat>(R.id.switchEmailSSl)
+        if (emailSettingVo != null) switchEmailSSl.isChecked = emailSettingVo.ssl
+        val editTextEmailFromAdd = view1.findViewById<EditText>(R.id.editTextEmailFromAdd)
+        if (emailSettingVo != null) editTextEmailFromAdd.setText(emailSettingVo.fromEmail)
+        val editTextEmailNickname = view1.findViewById<EditText>(R.id.editTextEmailNickname)
+        if (emailSettingVo != null) editTextEmailNickname.setText(emailSettingVo.nickname)
+        val editTextEmailPsw = view1.findViewById<EditText>(R.id.editTextEmailPsw)
+        if (emailSettingVo != null) editTextEmailPsw.setText(emailSettingVo.pwd)
+        val editTextEmailToAdd = view1.findViewById<EditText>(R.id.editTextEmailToAdd)
+        if (emailSettingVo != null) editTextEmailToAdd.setText(emailSettingVo.toEmail)
+        val buttonemailok = view1.findViewById<Button>(R.id.buttonemailok)
+        val buttonemaildel = view1.findViewById<Button>(R.id.buttonemaildel)
+        val buttonemailtest = view1.findViewById<Button>(R.id.buttonemailtest)
         alertDialog71
-                .setTitle(R.string.setbarktitle)
-                .setIcon(R.mipmap.bark)
-                .setView(view1)
-                .create();
-        final AlertDialog show = alertDialog71.show();
-
-        buttonBarkOk.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                if (senderModel == null) {
-                    SenderModel newSenderModel = new SenderModel();
-                    newSenderModel.setName(editTextBarkName.getText().toString());
-                    newSenderModel.setType(TYPE_BARK);
-                    newSenderModel.setStatus(STATUS_ON);
-                    BarkSettingVo barkSettingVoNew = new BarkSettingVo(
-                            editTextBarkServer.getText().toString()
-                    );
-                    newSenderModel.setJsonSetting(JSON.toJSONString(barkSettingVoNew));
-                    SenderUtil.addSender(newSenderModel);
-                    initSenders();
-                    adapter.add(senderModels);
-                } else {
-                    senderModel.setName(editTextBarkName.getText().toString());
-                    senderModel.setType(TYPE_BARK);
-                    senderModel.setStatus(STATUS_ON);
-                    BarkSettingVo barkSettingVoNew = new BarkSettingVo(
-                            editTextBarkServer.getText().toString()
-                    );
-                    senderModel.setJsonSetting(JSON.toJSONString(barkSettingVoNew));
-                    SenderUtil.updateSender(senderModel);
-                    initSenders();
-                    adapter.update(senderModels);
-                }
-
-                show.dismiss();
-
+            .setTitle(R.string.setemailtitle)
+            .setIcon(R.mipmap.email)
+            .setView(view1)
+            .create()
+        val show = alertDialog71.show()
+        buttonemailok.setOnClickListener {
+            if (senderModel == null) {
+                val newSenderModel = SenderModel()
+                newSenderModel.name = editTextEmailName.text.toString()
+                newSenderModel.type = SenderModel.TYPE_EMAIL
+                newSenderModel.setStatus(SenderModel.STATUS_ON)
+                val emailSettingVonew = EmailSettingVo(
+                    editTextEmailHost.text.toString(),
+                    editTextEmailPort.text.toString(),
+                    switchEmailSSl.isChecked,
+                    editTextEmailFromAdd.text.toString(),
+                    editTextEmailNickname.text.toString(),
+                    editTextEmailPsw.text.toString(),
+                    editTextEmailToAdd.text.toString()
+                )
+                newSenderModel.jsonSetting = JSON.toJSONString(emailSettingVonew)
+                SenderUtil.addSender(newSenderModel)
+                initSenders()
+                adapter!!.add(senderModels)
+            } else {
+                senderModel.name = editTextEmailName.text.toString()
+                senderModel.type = SenderModel.TYPE_EMAIL
+                senderModel.setStatus(SenderModel.STATUS_ON)
+                val emailSettingVonew = EmailSettingVo(
+                    editTextEmailHost.text.toString(),
+                    editTextEmailPort.text.toString(),
+                    switchEmailSSl.isChecked,
+                    editTextEmailFromAdd.text.toString(),
+                    editTextEmailNickname.text.toString(),
+                    editTextEmailPsw.text.toString(),
+                    editTextEmailToAdd.text.toString()
+                )
+                senderModel.jsonSetting = JSON.toJSONString(emailSettingVonew)
+                SenderUtil.updateSender(senderModel)
+                initSenders()
+                adapter!!.update(senderModels)
             }
-        });
-        buttonBarkDel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (senderModel != null) {
-                    SenderUtil.delSender(senderModel.getId());
-                    initSenders();
-                    adapter.del(senderModels);
-                }
-                show.dismiss();
+            show.dismiss()
+        }
+        buttonemaildel.setOnClickListener {
+            if (senderModel != null) {
+                SenderUtil.delSender(senderModel.id)
+                initSenders()
+                adapter!!.del(senderModels)
             }
-        });
-        buttonBarkTest.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String barkServer = editTextBarkServer.getText().toString();
-                if (!barkServer.isEmpty()) {
-                    try {
-                        SenderBarkMsg.sendMsg(0, handler, barkServer, "19999999999", "【京东】验证码为387481（切勿将验证码告知他人），请在页面中输入完成验证，如有问题请点击 ihelp.jd.com 联系京东客服");
-                    } catch (Exception e) {
-                        Toast.makeText(SenderActivity.this, "发送失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
-                        e.printStackTrace();
-                    }
-                } else {
-                    Toast.makeText(SenderActivity.this, "bark-server 不能为空", Toast.LENGTH_LONG).show();
-                }
+            show.dismiss()
+        }
+        buttonemailtest.setOnClickListener {
+            val host = editTextEmailHost.text.toString()
+            val port = editTextEmailPort.text.toString()
+            val ssl = switchEmailSSl.isChecked
+            val fromemail = editTextEmailFromAdd.text.toString()
+            val pwd = editTextEmailPsw.text.toString()
+            val toemail = editTextEmailToAdd.text.toString()
+            var nickname = editTextEmailNickname.text.toString()
+            if (nickname == null || nickname == "") {
+                nickname = "SmsForwarder"
             }
-        });
+            if (host.isNotEmpty() && port.isNotEmpty() && fromemail.isNotEmpty() && pwd.isNotEmpty() && toemail.isNotEmpty()) {
+                try {
+                    SenderMailMsg.sendEmail(
+                        0,
+                        handler,
+                        host,
+                        port,
+                        ssl,
+                        fromemail,
+                        nickname,
+                        pwd,
+                        toemail,
+                        "SmsForwarder Title",
+                        "测试内容(content)@" + SimpleDateFormat(
+                            "yyyy-MM-dd HH:mm:ss",
+                            Locale.getDefault()
+                        ).format(
+                            Date()
+                        )
+                    )
+                } catch (e: Exception) {
+                    Toast.makeText(this@SenderActivity, "发送失败：" + e.message, Toast.LENGTH_LONG)
+                        .show()
+                    e.printStackTrace()
+                }
+            } else {
+                Toast.makeText(this@SenderActivity, "邮箱参数不完整", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
-    private void setServerChan(final SenderModel senderModel) {
-        ServerChanSettingVo serverchanSettingVo = null;
+    private fun setBark(senderModel: SenderModel?) {
+        var barkSettingVo: BarkSettingVo? = null
         //try phrase json setting
         if (senderModel != null) {
-            String jsonSettingStr = senderModel.getJsonSetting();
+            val jsonSettingStr = senderModel.jsonSetting
             if (jsonSettingStr != null) {
-                serverchanSettingVo = JSON.parseObject(jsonSettingStr, ServerChanSettingVo.class);
+                barkSettingVo = JSON.parseObject(jsonSettingStr, BarkSettingVo::class.java)
             }
         }
-
-        final AlertDialog.Builder alertDialog71 = new AlertDialog.Builder(SenderActivity.this);
-        View view1 = View.inflate(SenderActivity.this, R.layout.alert_dialog_setview_serverchan, null);
-
-        final EditText editTextServerChanName = view1.findViewById(R.id.editTextServerChanName);
-        if (senderModel != null) editTextServerChanName.setText(senderModel.getName());
-        final EditText editTextServerChanSendKey = view1.findViewById(R.id.editTextServerChanSendKey);
-        if (serverchanSettingVo != null)
-            editTextServerChanSendKey.setText(serverchanSettingVo.getSendKey());
-
-        Button buttonServerChanOk = view1.findViewById(R.id.buttonServerChanOk);
-        Button buttonServerChanDel = view1.findViewById(R.id.buttonServerChanDel);
-        Button buttonServerChanTest = view1.findViewById(R.id.buttonServerChanTest);
+        val alertDialog71 = AlertDialog.Builder(this@SenderActivity)
+        val view1 = View.inflate(this@SenderActivity, R.layout.alert_dialog_setview_bark, null)
+        val editTextBarkName = view1.findViewById<EditText>(R.id.editTextBarkName)
+        if (senderModel != null) editTextBarkName.setText(senderModel.name)
+        val editTextBarkServer = view1.findViewById<EditText>(R.id.editTextBarkServer)
+        if (barkSettingVo != null) editTextBarkServer.setText(barkSettingVo.server)
+        val buttonBarkOk = view1.findViewById<Button>(R.id.buttonBarkOk)
+        val buttonBarkDel = view1.findViewById<Button>(R.id.buttonBarkDel)
+        val buttonBarkTest = view1.findViewById<Button>(R.id.buttonBarkTest)
         alertDialog71
-                .setTitle(R.string.setserverchantitle)
-                .setIcon(R.mipmap.serverchan)
-                .setView(view1)
-                .create();
-        final AlertDialog show = alertDialog71.show();
+            .setTitle(R.string.setbarktitle)
+            .setIcon(R.mipmap.bark)
+            .setView(view1)
+            .create()
+        val show = alertDialog71.show()
+        buttonBarkOk.setOnClickListener {
+            if (senderModel == null) {
+                val newSenderModel = SenderModel()
+                newSenderModel.name = editTextBarkName.text.toString()
+                newSenderModel.type = SenderModel.TYPE_BARK
+                newSenderModel.setStatus(SenderModel.STATUS_ON)
 
-        buttonServerChanOk.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                if (senderModel == null) {
-                    SenderModel newSenderModel = new SenderModel();
-                    newSenderModel.setName(editTextServerChanName.getText().toString());
-                    newSenderModel.setType(TYPE_SERVER_CHAN);
-                    newSenderModel.setStatus(STATUS_ON);
-                    ServerChanSettingVo serverchanSettingVoNew = new ServerChanSettingVo(
-                            editTextServerChanSendKey.getText().toString()
-                    );
-                    newSenderModel.setJsonSetting(JSON.toJSONString(serverchanSettingVoNew));
-                    SenderUtil.addSender(newSenderModel);
-                    initSenders();
-                    adapter.add(senderModels);
-                } else {
-                    senderModel.setName(editTextServerChanName.getText().toString());
-                    senderModel.setType(TYPE_SERVER_CHAN);
-                    senderModel.setStatus(STATUS_ON);
-                    ServerChanSettingVo serverchanSettingVoNew = new ServerChanSettingVo(
-                            editTextServerChanSendKey.getText().toString()
-                    );
-                    senderModel.setJsonSetting(JSON.toJSONString(serverchanSettingVoNew));
-                    SenderUtil.updateSender(senderModel);
-                    initSenders();
-                    adapter.update(senderModels);
-                }
-
-                show.dismiss();
-
+                val barkSettingVoNew = BarkSettingVo(
+                    editTextBarkServer.text.toString()
+                )
+                newSenderModel.jsonSetting = JSON.toJSONString(barkSettingVoNew)
+                SenderUtil.addSender(newSenderModel)
+                initSenders()
+                adapter!!.add(senderModels)
+            } else {
+                senderModel.name = editTextBarkName.text.toString()
+                senderModel.type = SenderModel.TYPE_BARK
+                senderModel.setStatus(SenderModel.STATUS_ON)
+                val barkSettingVoNew = BarkSettingVo(
+                    editTextBarkServer.text.toString()
+                )
+                senderModel.jsonSetting = JSON.toJSONString(barkSettingVoNew)
+                SenderUtil.updateSender(senderModel)
+                initSenders()
+                adapter!!.update(senderModels)
             }
-        });
-        buttonServerChanDel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (senderModel != null) {
-                    SenderUtil.delSender(senderModel.getId());
-                    initSenders();
-                    adapter.del(senderModels);
-                }
-                show.dismiss();
+            show.dismiss()
+        }
+        buttonBarkDel.setOnClickListener {
+            if (senderModel != null) {
+                SenderUtil.delSender(senderModel.id)
+                initSenders()
+                adapter!!.del(senderModels)
             }
-        });
-        buttonServerChanTest.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String serverchanServer = editTextServerChanSendKey.getText().toString();
-                if (!serverchanServer.isEmpty()) {
-                    try {
-                        SenderServerChanMsg.sendMsg(0, handler, serverchanServer, "19999999999", "【京东】验证码为387481（切勿将验证码告知他人），请在页面中输入完成验证，如有问题请点击 ihelp.jd.com 联系京东客服");
-                    } catch (Exception e) {
-                        Toast.makeText(SenderActivity.this, "发送失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
-                        e.printStackTrace();
-                    }
-                } else {
-                    Toast.makeText(SenderActivity.this, "Server酱·Turbo版的 SendKey 不能为空", Toast.LENGTH_LONG).show();
+            show.dismiss()
+        }
+        buttonBarkTest.setOnClickListener {
+            val barkServer = editTextBarkServer.text.toString()
+            if (barkServer.isNotEmpty()) {
+                try {
+                    SenderBarkMsg.sendMsg(
+                        0,
+                        handler,
+                        barkServer,
+                        "19999999999",
+                        "【京东】验证码为387481（切勿将验证码告知他人），请在页面中输入完成验证，如有问题请点击 ihelp.jd.com 联系京东客服"
+                    )
+                } catch (e: Exception) {
+                    Toast.makeText(this@SenderActivity, "发送失败：" + e.message, Toast.LENGTH_LONG)
+                        .show()
+                    e.printStackTrace()
                 }
+            } else {
+                Toast.makeText(this@SenderActivity, "bark-server 不能为空", Toast.LENGTH_LONG).show()
             }
-        });
+        }
     }
 
-    private void setWebNotify(final SenderModel senderModel) {
-        WebNotifySettingVo webNotifySettingVo = null;
+    private fun setServerChan(senderModel: SenderModel?) {
+        var serverchanSettingVo: ServerChanSettingVo? = null
         //try phrase json setting
         if (senderModel != null) {
-            String jsonSettingStr = senderModel.getJsonSetting();
+            val jsonSettingStr = senderModel.jsonSetting
             if (jsonSettingStr != null) {
-                webNotifySettingVo = JSON.parseObject(jsonSettingStr, WebNotifySettingVo.class);
+                serverchanSettingVo =
+                    JSON.parseObject(jsonSettingStr, ServerChanSettingVo::class.java)
             }
         }
-
-        final AlertDialog.Builder alertDialog71 = new AlertDialog.Builder(SenderActivity.this);
-        View view1 = View.inflate(SenderActivity.this, R.layout.alert_dialog_setview_webnotify, null);
-
-        final EditText editTextWebNotifyName = view1.findViewById(R.id.editTextWebNotifyName);
-        if (senderModel != null) editTextWebNotifyName.setText(senderModel.getName());
-        final EditText editTextWebNotifyWebServer = view1.findViewById(R.id.editTextWebNotifyWebServer);
-        if (webNotifySettingVo != null) editTextWebNotifyWebServer.setText(webNotifySettingVo.getWebServer());
-        final EditText editTextWebNotifySecret = view1.findViewById(R.id.editTextWebNotifySecret);
-        if (webNotifySettingVo != null) editTextWebNotifySecret.setText(webNotifySettingVo.getSecret());
-        final RadioGroup radioGroupWebNotifyMethod = (RadioGroup) view1.findViewById(R.id.radioGroupWebNotifyMethod);
-        if (webNotifySettingVo != null) radioGroupWebNotifyMethod.check(webNotifySettingVo.getWebNotifyMethodCheckId());
-
-        Button buttonbebnotifyok = view1.findViewById(R.id.buttonbebnotifyok);
-        Button buttonbebnotifydel = view1.findViewById(R.id.buttonbebnotifydel);
-        Button buttonbebnotifytest = view1.findViewById(R.id.buttonbebnotifytest);
+        val alertDialog71 = AlertDialog.Builder(this@SenderActivity)
+        val view1 =
+            View.inflate(this@SenderActivity, R.layout.alert_dialog_setview_serverchan, null)
+        val editTextServerChanName = view1.findViewById<EditText>(R.id.editTextServerChanName)
+        if (senderModel != null) editTextServerChanName.setText(senderModel.name)
+        val editTextServerChanSendKey = view1.findViewById<EditText>(R.id.editTextServerChanSendKey)
+        if (serverchanSettingVo != null) editTextServerChanSendKey.setText(serverchanSettingVo.sendKey)
+        val buttonServerChanOk = view1.findViewById<Button>(R.id.buttonServerChanOk)
+        val buttonServerChanDel = view1.findViewById<Button>(R.id.buttonServerChanDel)
+        val buttonServerChanTest = view1.findViewById<Button>(R.id.buttonServerChanTest)
         alertDialog71
-                .setTitle(R.string.setwebnotifytitle)
-                .setIcon(R.mipmap.webhook)
-                .setView(view1)
-                .create();
-        final AlertDialog show = alertDialog71.show();
+            .setTitle(R.string.setserverchantitle)
+            .setIcon(R.mipmap.serverchan)
+            .setView(view1)
+            .create()
+        val show = alertDialog71.show()
+        buttonServerChanOk.setOnClickListener {
+            if (senderModel == null) {
+                val newSenderModel = SenderModel()
+                newSenderModel.name = editTextServerChanName.text.toString()
+                newSenderModel.type = SenderModel.TYPE_SERVER_CHAN
+                newSenderModel.setStatus(SenderModel.STATUS_ON)
 
-        buttonbebnotifyok.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                if (senderModel == null) {
-                    SenderModel newSenderModel = new SenderModel();
-                    newSenderModel.setName(editTextWebNotifyName.getText().toString());
-                    newSenderModel.setType(TYPE_WEB_NOTIFY);
-                    newSenderModel.setStatus(STATUS_ON);
-                    WebNotifySettingVo webNotifySettingVoNew = new WebNotifySettingVo(
-                            editTextWebNotifyWebServer.getText().toString(),
-                            editTextWebNotifySecret.getText().toString(),
-                            (radioGroupWebNotifyMethod.getCheckedRadioButtonId() == R.id.radioWebNotifyMethodGet ? "GET" : "POST")
-                    );
-                    newSenderModel.setJsonSetting(JSON.toJSONString(webNotifySettingVoNew));
-                    SenderUtil.addSender(newSenderModel);
-                    initSenders();
-                    adapter.add(senderModels);
-                } else {
-                    senderModel.setName(editTextWebNotifyName.getText().toString());
-                    senderModel.setType(TYPE_WEB_NOTIFY);
-                    senderModel.setStatus(STATUS_ON);
-                    WebNotifySettingVo webNotifySettingVoNew = new WebNotifySettingVo(
-                            editTextWebNotifyWebServer.getText().toString(),
-                            editTextWebNotifySecret.getText().toString(),
-                            (radioGroupWebNotifyMethod.getCheckedRadioButtonId() == R.id.radioWebNotifyMethodGet ? "GET" : "POST")
-                    );
-                    senderModel.setJsonSetting(JSON.toJSONString(webNotifySettingVoNew));
-                    SenderUtil.updateSender(senderModel);
-                    initSenders();
-                    adapter.update(senderModels);
-                }
-
-                show.dismiss();
-
+                val serverchanSettingVoNew = ServerChanSettingVo(
+                    editTextServerChanSendKey.text.toString()
+                )
+                newSenderModel.jsonSetting = JSON.toJSONString(serverchanSettingVoNew)
+                SenderUtil.addSender(newSenderModel)
+                initSenders()
+                adapter!!.add(senderModels)
+            } else {
+                senderModel.name = editTextServerChanName.text.toString()
+                senderModel.type = SenderModel.TYPE_SERVER_CHAN
+                senderModel.setStatus(SenderModel.STATUS_ON)
+                val serverchanSettingVoNew = ServerChanSettingVo(
+                    editTextServerChanSendKey.text.toString()
+                )
+                senderModel.jsonSetting = JSON.toJSONString(serverchanSettingVoNew)
+                SenderUtil.updateSender(senderModel)
+                initSenders()
+                adapter!!.update(senderModels)
             }
-        });
-        buttonbebnotifydel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (senderModel != null) {
-                    SenderUtil.delSender(senderModel.getId());
-                    initSenders();
-                    adapter.del(senderModels);
-                }
-                show.dismiss();
+            show.dismiss()
+        }
+        buttonServerChanDel.setOnClickListener {
+            if (senderModel != null) {
+                SenderUtil.delSender(senderModel.id)
+                initSenders()
+                adapter!!.del(senderModels)
             }
-        });
-        buttonbebnotifytest.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String webServer = editTextWebNotifyWebServer.getText().toString();
-                String secret = editTextWebNotifySecret.getText().toString();
-                String method = radioGroupWebNotifyMethod.getCheckedRadioButtonId() == R.id.radioWebNotifyMethodGet ? "GET" : "POST";
-                if (!webServer.isEmpty()) {
-                    try {
-                        SenderWebNotifyMsg.sendMsg(0, handler, webServer, secret, method, "SmsForwarder Title", "测试内容(content)@" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())));
-                    } catch (Exception e) {
-                        Toast.makeText(SenderActivity.this, "发送失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
-                        e.printStackTrace();
-                    }
-                } else {
-                    Toast.makeText(SenderActivity.this, "WebServer 不能为空", Toast.LENGTH_LONG).show();
+            show.dismiss()
+        }
+        buttonServerChanTest.setOnClickListener {
+            val serverchanServer = editTextServerChanSendKey.text.toString()
+            if (serverchanServer.isNotEmpty()) {
+                try {
+                    SenderServerChanMsg.sendMsg(
+                        0,
+                        handler,
+                        serverchanServer,
+                        "19999999999",
+                        "【京东】验证码为387481（切勿将验证码告知他人），请在页面中输入完成验证，如有问题请点击 ihelp.jd.com 联系京东客服"
+                    )
+                } catch (e: Exception) {
+                    Toast.makeText(this@SenderActivity, "发送失败：" + e.message, Toast.LENGTH_LONG)
+                        .show()
+                    e.printStackTrace()
                 }
+            } else {
+                Toast.makeText(
+                    this@SenderActivity,
+                    "Server酱·Turbo版的 SendKey 不能为空",
+                    Toast.LENGTH_LONG
+                ).show()
             }
-        });
+        }
     }
 
-    private void setQYWXGroupRobot(final SenderModel senderModel) {
-        QYWXGroupRobotSettingVo qywxGroupRobotSettingVo = null;
+    private fun setWebNotify(senderModel: SenderModel?) {
+        var webNotifySettingVo: WebNotifySettingVo? = null
         //try phrase json setting
         if (senderModel != null) {
-            String jsonSettingStr = senderModel.getJsonSetting();
+            val jsonSettingStr = senderModel.jsonSetting
             if (jsonSettingStr != null) {
-                qywxGroupRobotSettingVo = JSON.parseObject(jsonSettingStr, QYWXGroupRobotSettingVo.class);
+                webNotifySettingVo =
+                    JSON.parseObject(jsonSettingStr, WebNotifySettingVo::class.java)
             }
         }
-
-        final AlertDialog.Builder alertDialog71 = new AlertDialog.Builder(SenderActivity.this);
-        View view1 = View.inflate(SenderActivity.this, R.layout.alert_dialog_setview_qywxgrouprobot, null);
-
-        final EditText editTextQYWXGroupRobotName = view1.findViewById(R.id.editTextQYWXGroupRobotName);
-        if (senderModel != null) editTextQYWXGroupRobotName.setText(senderModel.getName());
-        final EditText editTextQYWXGroupRobotWebHook = view1.findViewById(R.id.editTextQYWXGroupRobotWebHook);
-        if (qywxGroupRobotSettingVo != null)
-            editTextQYWXGroupRobotWebHook.setText(qywxGroupRobotSettingVo.getWebHook());
-
-        Button buttonQyWxGroupRobotOk = view1.findViewById(R.id.buttonQyWxGroupRobotOk);
-        Button buttonQyWxGroupRobotDel = view1.findViewById(R.id.buttonQyWxGroupRobotDel);
-        Button buttonQyWxGroupRobotTest = view1.findViewById(R.id.buttonQyWxGroupRobotTest);
+        val alertDialog71 = AlertDialog.Builder(this@SenderActivity)
+        val view1 = View.inflate(this@SenderActivity, R.layout.alert_dialog_setview_webnotify, null)
+        val editTextWebNotifyName = view1.findViewById<EditText>(R.id.editTextWebNotifyName)
+        if (senderModel != null) editTextWebNotifyName.setText(senderModel.name)
+        val editTextWebNotifyWebServer =
+            view1.findViewById<EditText>(R.id.editTextWebNotifyWebServer)
+        if (webNotifySettingVo != null) editTextWebNotifyWebServer.setText(webNotifySettingVo.webServer)
+        val editTextWebNotifySecret = view1.findViewById<EditText>(R.id.editTextWebNotifySecret)
+        if (webNotifySettingVo != null) editTextWebNotifySecret.setText(webNotifySettingVo.secret)
+        val radioGroupWebNotifyMethod =
+            view1.findViewById<View>(R.id.radioGroupWebNotifyMethod) as RadioGroup
+        if (webNotifySettingVo != null) radioGroupWebNotifyMethod.check(webNotifySettingVo.webNotifyMethodCheckId)
+        val buttonbebnotifyok = view1.findViewById<Button>(R.id.buttonbebnotifyok)
+        val buttonbebnotifydel = view1.findViewById<Button>(R.id.buttonbebnotifydel)
+        val buttonbebnotifytest = view1.findViewById<Button>(R.id.buttonbebnotifytest)
         alertDialog71
-                .setTitle(R.string.setqywxgrouprobottitle)
-                .setIcon(R.mipmap.qywx)
-                .setView(view1)
-                .create();
-        final AlertDialog show = alertDialog71.show();
+            .setTitle(R.string.setwebnotifytitle)
+            .setIcon(R.mipmap.webhook)
+            .setView(view1)
+            .create()
+        val show = alertDialog71.show()
+        buttonbebnotifyok.setOnClickListener {
+            if (senderModel == null) {
+                val newSenderModel = SenderModel()
+                newSenderModel.name = editTextWebNotifyName.text.toString()
+                newSenderModel.type = SenderModel.TYPE_WEB_NOTIFY
+                newSenderModel.setStatus(SenderModel.STATUS_ON)
 
-        buttonQyWxGroupRobotOk.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                if (senderModel == null) {
-                    SenderModel newSenderModel = new SenderModel();
-                    newSenderModel.setName(editTextQYWXGroupRobotName.getText().toString());
-                    newSenderModel.setType(TYPE_QYWX_GROUP_ROBOT);
-                    newSenderModel.setStatus(STATUS_ON);
-                    QYWXGroupRobotSettingVo qywxGroupRobotSettingVoNew = new QYWXGroupRobotSettingVo(
-                            editTextQYWXGroupRobotWebHook.getText().toString()
-                    );
-                    newSenderModel.setJsonSetting(JSON.toJSONString(qywxGroupRobotSettingVoNew));
-                    SenderUtil.addSender(newSenderModel);
-                    initSenders();
-                    adapter.add(senderModels);
-                } else {
-                    senderModel.setName(editTextQYWXGroupRobotName.getText().toString());
-                    senderModel.setType(TYPE_QYWX_GROUP_ROBOT);
-                    senderModel.setStatus(STATUS_ON);
-                    QYWXGroupRobotSettingVo qywxGroupRobotSettingVoNew = new QYWXGroupRobotSettingVo(
-                            editTextQYWXGroupRobotWebHook.getText().toString()
-                    );
-                    senderModel.setJsonSetting(JSON.toJSONString(qywxGroupRobotSettingVoNew));
-                    SenderUtil.updateSender(senderModel);
-                    initSenders();
-                    adapter.update(senderModels);
-                }
-
-                show.dismiss();
-
+                val webNotifySettingVoNew = WebNotifySettingVo(
+                    editTextWebNotifyWebServer.text.toString(),
+                    editTextWebNotifySecret.text.toString(),
+                    if (radioGroupWebNotifyMethod.checkedRadioButtonId == R.id.radioWebNotifyMethodGet) "GET" else "POST"
+                )
+                newSenderModel.jsonSetting = JSON.toJSONString(webNotifySettingVoNew)
+                SenderUtil.addSender(newSenderModel)
+                initSenders()
+                adapter!!.add(senderModels)
+            } else {
+                senderModel.name = editTextWebNotifyName.text.toString()
+                senderModel.type = SenderModel.TYPE_WEB_NOTIFY
+                senderModel.setStatus(SenderModel.STATUS_ON)
+                val webNotifySettingVoNew = WebNotifySettingVo(
+                    editTextWebNotifyWebServer.text.toString(),
+                    editTextWebNotifySecret.text.toString(),
+                    if (radioGroupWebNotifyMethod.checkedRadioButtonId == R.id.radioWebNotifyMethodGet) "GET" else "POST"
+                )
+                senderModel.jsonSetting = JSON.toJSONString(webNotifySettingVoNew)
+                SenderUtil.updateSender(senderModel)
+                initSenders()
+                adapter!!.update(senderModels)
             }
-        });
-        buttonQyWxGroupRobotDel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (senderModel != null) {
-                    SenderUtil.delSender(senderModel.getId());
-                    initSenders();
-                    adapter.del(senderModels);
-                }
-                show.dismiss();
+            show.dismiss()
+        }
+        buttonbebnotifydel.setOnClickListener {
+            if (senderModel != null) {
+                SenderUtil.delSender(senderModel.id)
+                initSenders()
+                adapter!!.del(senderModels)
             }
-        });
-        buttonQyWxGroupRobotTest.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String webHook = editTextQYWXGroupRobotWebHook.getText().toString();
-                if (!webHook.isEmpty()) {
-                    try {
-                        SenderQyWxGroupRobotMsg.sendMsg(0, handler, webHook, "SmsForwarder Title", "测试内容(content)@" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())));
-                    } catch (Exception e) {
-                        Toast.makeText(SenderActivity.this, "发送失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
-                        e.printStackTrace();
-                    }
-                } else {
-                    Toast.makeText(SenderActivity.this, "webHook 不能为空", Toast.LENGTH_LONG).show();
+            show.dismiss()
+        }
+        buttonbebnotifytest.setOnClickListener {
+            val webServer = editTextWebNotifyWebServer.text.toString()
+            val secret = editTextWebNotifySecret.text.toString()
+            val method =
+                if (radioGroupWebNotifyMethod.checkedRadioButtonId == R.id.radioWebNotifyMethodGet) "GET" else "POST"
+            if (webServer.isNotEmpty()) {
+                try {
+                    SenderWebNotifyMsg.sendMsg(
+                        0,
+                        handler,
+                        webServer,
+                        secret,
+                        method,
+                        "SmsForwarder Title",
+                        "测试内容(content)@" + SimpleDateFormat(
+                            "yyyy-MM-dd HH:mm:ss",
+                            Locale.getDefault()
+                        ).format(
+                            Date()
+                        )
+                    )
+                } catch (e: Exception) {
+                    Toast.makeText(this@SenderActivity, "发送失败：" + e.message, Toast.LENGTH_LONG)
+                        .show()
+                    e.printStackTrace()
                 }
+            } else {
+                Toast.makeText(this@SenderActivity, "WebServer 不能为空", Toast.LENGTH_LONG).show()
             }
-        });
+        }
+    }
+
+    private fun setQYWXGroupRobot(senderModel: SenderModel?) {
+        var qywxGroupRobotSettingVo: QYWXGroupRobotSettingVo? = null
+        //try phrase json setting
+        if (senderModel != null) {
+            val jsonSettingStr = senderModel.jsonSetting
+            if (jsonSettingStr != null) {
+                qywxGroupRobotSettingVo =
+                    JSON.parseObject(jsonSettingStr, QYWXGroupRobotSettingVo::class.java)
+            }
+        }
+        val alertDialog71 = AlertDialog.Builder(this@SenderActivity)
+        val view1 =
+            View.inflate(this@SenderActivity, R.layout.alert_dialog_setview_qywxgrouprobot, null)
+        val editTextQYWXGroupRobotName =
+            view1.findViewById<EditText>(R.id.editTextQYWXGroupRobotName)
+        if (senderModel != null) editTextQYWXGroupRobotName.setText(senderModel.name)
+        val editTextQYWXGroupRobotWebHook =
+            view1.findViewById<EditText>(R.id.editTextQYWXGroupRobotWebHook)
+        if (qywxGroupRobotSettingVo != null) editTextQYWXGroupRobotWebHook.setText(
+            qywxGroupRobotSettingVo.webHook
+        )
+        val buttonQyWxGroupRobotOk = view1.findViewById<Button>(R.id.buttonQyWxGroupRobotOk)
+        val buttonQyWxGroupRobotDel = view1.findViewById<Button>(R.id.buttonQyWxGroupRobotDel)
+        val buttonQyWxGroupRobotTest = view1.findViewById<Button>(R.id.buttonQyWxGroupRobotTest)
+        alertDialog71
+            .setTitle(R.string.setqywxgrouprobottitle)
+            .setIcon(R.mipmap.qywx)
+            .setView(view1)
+            .create()
+        val show = alertDialog71.show()
+        buttonQyWxGroupRobotOk.setOnClickListener {
+            if (senderModel == null) {
+                val newSenderModel = SenderModel()
+                newSenderModel.name = editTextQYWXGroupRobotName.text.toString()
+                newSenderModel.type = SenderModel.TYPE_QYWX_GROUP_ROBOT
+                newSenderModel.setStatus(SenderModel.STATUS_ON)
+
+                val qywxGroupRobotSettingVoNew = QYWXGroupRobotSettingVo(
+                    editTextQYWXGroupRobotWebHook.text.toString()
+                )
+                newSenderModel.jsonSetting = JSON.toJSONString(qywxGroupRobotSettingVoNew)
+                SenderUtil.addSender(newSenderModel)
+                initSenders()
+                adapter!!.add(senderModels)
+            } else {
+                senderModel.name = editTextQYWXGroupRobotName.text.toString()
+                senderModel.type = SenderModel.TYPE_QYWX_GROUP_ROBOT
+                senderModel.setStatus(SenderModel.STATUS_ON)
+                val qywxGroupRobotSettingVoNew = QYWXGroupRobotSettingVo(
+                    editTextQYWXGroupRobotWebHook.text.toString()
+                )
+                senderModel.jsonSetting = JSON.toJSONString(qywxGroupRobotSettingVoNew)
+                SenderUtil.updateSender(senderModel)
+                initSenders()
+                adapter!!.update(senderModels)
+            }
+            show.dismiss()
+        }
+        buttonQyWxGroupRobotDel.setOnClickListener {
+            if (senderModel != null) {
+                SenderUtil.delSender(senderModel.id)
+                initSenders()
+                adapter!!.del(senderModels)
+            }
+            show.dismiss()
+        }
+        buttonQyWxGroupRobotTest.setOnClickListener {
+            val webHook = editTextQYWXGroupRobotWebHook.text.toString()
+            if (webHook.isNotEmpty()) {
+                try {
+                    SenderQyWxGroupRobotMsg.sendMsg(
+                        0,
+                        handler,
+                        webHook,
+                        "SmsForwarder Title",
+                        "测试内容(content)@" + SimpleDateFormat(
+                            "yyyy-MM-dd HH:mm:ss",
+                            Locale.getDefault()
+                        ).format(
+                            Date()
+                        )
+                    )
+                } catch (e: Exception) {
+                    Toast.makeText(this@SenderActivity, "发送失败：" + e.message, Toast.LENGTH_LONG)
+                        .show()
+                    e.printStackTrace()
+                }
+            } else {
+                Toast.makeText(this@SenderActivity, "webHook 不能为空", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     //企业微信应用
-    private void setQYWXApp(final SenderModel senderModel) {
-        QYWXAppSettingVo QYWXAppSettingVo = null;
+    private fun setQYWXApp(senderModel: SenderModel?) {
+        var qywxAppSettingVo: QYWXAppSettingVo? = null
         //try phrase json setting
         if (senderModel != null) {
-            String jsonSettingStr = senderModel.getJsonSetting();
+            val jsonSettingStr = senderModel.jsonSetting
             if (jsonSettingStr != null) {
-                QYWXAppSettingVo = JSON.parseObject(jsonSettingStr, QYWXAppSettingVo.class);
+                qywxAppSettingVo =
+                    JSON.parseObject<QYWXAppSettingVo>(jsonSettingStr, QYWXAppSettingVo::class.java)
             }
         }
-        final AlertDialog.Builder alertDialog71 = new AlertDialog.Builder(SenderActivity.this);
-        View view1 = View.inflate(SenderActivity.this, R.layout.alert_dialog_setview_qywxapp, null);
-
-        final EditText editTextQYWXAppName = view1.findViewById(R.id.editTextQYWXAppName);
-        if (senderModel != null)
-            editTextQYWXAppName.setText(senderModel.getName());
-        final EditText editTextQYWXAppCorpID = view1.findViewById(R.id.editTextQYWXAppCorpID);
-        final EditText editTextQYWXAppAgentID = view1.findViewById(R.id.editTextQYWXAppAgentID);
-        final EditText editTextQYWXAppSecret = view1.findViewById(R.id.editTextQYWXAppSecret);
-        final LinearLayout linearLayoutQYWXAppToUser = view1.findViewById(R.id.linearLayoutQYWXAppToUser);
-        final EditText editTextQYWXAppToUser = view1.findViewById(R.id.editTextQYWXAppToUser);
-        final Switch switchQYWXAppAtAll = view1.findViewById(R.id.switchQYWXAppAtAll);
-        if (QYWXAppSettingVo != null) {
-            editTextQYWXAppCorpID.setText(QYWXAppSettingVo.getCorpID());
-            editTextQYWXAppAgentID.setText(QYWXAppSettingVo.getAgentID());
-            editTextQYWXAppSecret.setText(QYWXAppSettingVo.getSecret());
-            editTextQYWXAppToUser.setText(QYWXAppSettingVo.getToUser());
-            switchQYWXAppAtAll.setChecked(QYWXAppSettingVo.getAtAll());
-            linearLayoutQYWXAppToUser.setVisibility((Boolean) QYWXAppSettingVo.getAtAll() ? View.GONE : View.VISIBLE);
+        val alertDialog71 = AlertDialog.Builder(this@SenderActivity)
+        val view1 = View.inflate(this@SenderActivity, R.layout.alert_dialog_setview_qywxapp, null)
+        val editTextQYWXAppName = view1.findViewById<EditText>(R.id.editTextQYWXAppName)
+        if (senderModel != null) editTextQYWXAppName.setText(senderModel.name)
+        val editTextQYWXAppCorpID = view1.findViewById<EditText>(R.id.editTextQYWXAppCorpID)
+        val editTextQYWXAppAgentID = view1.findViewById<EditText>(R.id.editTextQYWXAppAgentID)
+        val editTextQYWXAppSecret = view1.findViewById<EditText>(R.id.editTextQYWXAppSecret)
+        val linearLayoutQYWXAppToUser =
+            view1.findViewById<LinearLayout>(R.id.linearLayoutQYWXAppToUser)
+        val editTextQYWXAppToUser = view1.findViewById<EditText>(R.id.editTextQYWXAppToUser)
+        val switchQYWXAppAtAll = view1.findViewById<SwitchCompat>(R.id.switchQYWXAppAtAll)
+        if (qywxAppSettingVo != null) {
+            editTextQYWXAppCorpID.setText(qywxAppSettingVo.corpID)
+            editTextQYWXAppAgentID.setText(qywxAppSettingVo.agentID)
+            editTextQYWXAppSecret.setText(qywxAppSettingVo.secret)
+            editTextQYWXAppToUser.setText(qywxAppSettingVo.toUser)
+            switchQYWXAppAtAll.isChecked = qywxAppSettingVo.atAll!!
+            linearLayoutQYWXAppToUser.visibility =
+                if (qywxAppSettingVo.atAll as Boolean) View.GONE else View.VISIBLE
         }
-        switchQYWXAppAtAll.setOnCheckedChangeListener(new Switch.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked) {
-                    linearLayoutQYWXAppToUser.setVisibility(View.GONE);
-                    editTextQYWXAppToUser.setText("@all");
-                } else {
-                    linearLayoutQYWXAppToUser.setVisibility(View.VISIBLE);
-                    editTextQYWXAppToUser.setText("");
-                }
-                Log.d(TAG, "onCheckedChanged:" + isChecked);
+        switchQYWXAppAtAll.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                linearLayoutQYWXAppToUser.visibility = View.GONE
+                editTextQYWXAppToUser.setText("@all")
+            } else {
+                linearLayoutQYWXAppToUser.visibility = View.VISIBLE
+                editTextQYWXAppToUser.setText("")
             }
-        });
-
-        Button buttonQYWXAppok = view1.findViewById(R.id.buttonQYWXAppOk);
-        Button buttonQYWXAppdel = view1.findViewById(R.id.buttonQYWXAppDel);
-        Button buttonQYWXApptest = view1.findViewById(R.id.buttonQYWXAppTest);
+            Log.d(TAG, "onCheckedChanged:$isChecked")
+        }
+        val buttonQYWXAppok = view1.findViewById<Button>(R.id.buttonQYWXAppOk)
+        val buttonQYWXAppdel = view1.findViewById<Button>(R.id.buttonQYWXAppDel)
+        val buttonQYWXApptest = view1.findViewById<Button>(R.id.buttonQYWXAppTest)
         alertDialog71
-                .setTitle(R.string.setqywxapptitle)
-                .setIcon(R.mipmap.qywxapp)
-                .setView(view1)
-                .create();
-        final AlertDialog show = alertDialog71.show();
-        buttonQYWXAppok.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String toUser = editTextQYWXAppToUser.getText().toString();
-                if (toUser == null || toUser.isEmpty()) {
-                    Toast.makeText(SenderActivity.this, "指定成员 不能为空 或者 选择@all", Toast.LENGTH_LONG).show();
-                    editTextQYWXAppToUser.setFocusable(true);
-                    editTextQYWXAppToUser.requestFocus();
-                    return;
-                }
+            .setTitle(R.string.setqywxapptitle)
+            .setIcon(R.mipmap.qywxapp)
+            .setView(view1)
+            .create()
+        val show = alertDialog71.show()
+        buttonQYWXAppok.setOnClickListener(View.OnClickListener {
+            val toUser = editTextQYWXAppToUser.text.toString()
+            if (toUser == null || toUser.isEmpty()) {
+                Toast.makeText(this@SenderActivity, "指定成员 不能为空 或者 选择@all", Toast.LENGTH_LONG).show()
+                editTextQYWXAppToUser.isFocusable = true
+                editTextQYWXAppToUser.requestFocus()
+                return@OnClickListener
+            }
+            if (senderModel == null) {
+                val newSenderModel = SenderModel()
+                newSenderModel.name = editTextQYWXAppName.text.toString()
+                newSenderModel.type = SenderModel.TYPE_QYWX_APP
+                newSenderModel.setStatus(SenderModel.STATUS_ON)
 
-                if (senderModel == null) {
-                    SenderModel newSenderModel = new SenderModel();
-                    newSenderModel.setName(editTextQYWXAppName.getText().toString());
-                    newSenderModel.setType(TYPE_QYWX_APP);
-                    newSenderModel.setStatus(STATUS_ON);
-                    QYWXAppSettingVo QYWXAppSettingVonew = new QYWXAppSettingVo(
-                            editTextQYWXAppCorpID.getText().toString(),
-                            editTextQYWXAppAgentID.getText().toString(),
-                            editTextQYWXAppSecret.getText().toString(),
-                            editTextQYWXAppToUser.getText().toString(),
-                            switchQYWXAppAtAll.isChecked());
-                    newSenderModel.setJsonSetting(JSON.toJSONString(QYWXAppSettingVonew));
-                    SenderUtil.addSender(newSenderModel);
-                    initSenders();
-                    adapter.add(senderModels);
-                } else {
-                    senderModel.setName(editTextQYWXAppName.getText().toString());
-                    senderModel.setType(TYPE_QYWX_APP);
-                    senderModel.setStatus(STATUS_ON);
-                    QYWXAppSettingVo QYWXAppSettingVonew = new QYWXAppSettingVo(
-                            editTextQYWXAppCorpID.getText().toString(),
-                            editTextQYWXAppAgentID.getText().toString(),
-                            editTextQYWXAppSecret.getText().toString(),
-                            editTextQYWXAppToUser.getText().toString(),
-                            switchQYWXAppAtAll.isChecked());
-                    senderModel.setJsonSetting(JSON.toJSONString(QYWXAppSettingVonew));
-                    SenderUtil.updateSender(senderModel);
-                    initSenders();
-                    adapter.update(senderModels);
-                }
-
-                show.dismiss();
+                val qywxAppSettingVoNew = QYWXAppSettingVo(
+                    editTextQYWXAppCorpID.text.toString(),
+                    editTextQYWXAppAgentID.text.toString(),
+                    editTextQYWXAppSecret.text.toString(),
+                    editTextQYWXAppToUser.text.toString(),
+                    switchQYWXAppAtAll.isChecked
+                )
+                newSenderModel.jsonSetting = JSON.toJSONString(qywxAppSettingVoNew)
+                SenderUtil.addSender(newSenderModel)
+                initSenders()
+                adapter!!.add(senderModels)
+            } else {
+                senderModel.name = editTextQYWXAppName.text.toString()
+                senderModel.type = SenderModel.TYPE_QYWX_APP
+                senderModel.setStatus(SenderModel.STATUS_ON)
+                val qywxAppSettingVoNew = QYWXAppSettingVo(
+                    editTextQYWXAppCorpID.text.toString(),
+                    editTextQYWXAppAgentID.text.toString(),
+                    editTextQYWXAppSecret.text.toString(),
+                    editTextQYWXAppToUser.text.toString(),
+                    switchQYWXAppAtAll.isChecked
+                )
+                senderModel.jsonSetting = JSON.toJSONString(qywxAppSettingVoNew)
+                SenderUtil.updateSender(senderModel)
+                initSenders()
+                adapter!!.update(senderModels)
             }
-        });
-        buttonQYWXAppdel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (senderModel != null) {
-                    SenderUtil.delSender(senderModel.getId());
-                    initSenders();
-                    adapter.del(senderModels);
-                }
-                show.dismiss();
+            show.dismiss()
+        })
+        buttonQYWXAppdel.setOnClickListener {
+            if (senderModel != null) {
+                SenderUtil.delSender(senderModel.id)
+                initSenders()
+                adapter!!.del(senderModels)
             }
-        });
-        buttonQYWXApptest.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String cropID = editTextQYWXAppCorpID.getText().toString();
-                String agentID = editTextQYWXAppAgentID.getText().toString();
-                String secret = editTextQYWXAppSecret.getText().toString();
-                String toUser = editTextQYWXAppToUser.getText().toString();
-                //Boolean atAll = switchQYWXAppAtAll.isChecked();
-                if (toUser != null && !toUser.isEmpty()) {
-                    try {
-                        SenderQyWxAppMsg.sendMsg(0, handler, cropID, agentID, secret, toUser, "测试内容(content)@" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())), true);
-                    } catch (Exception e) {
-                        Toast.makeText(SenderActivity.this, "发送失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
-                        e.printStackTrace();
-                    }
-                } else {
-                    Toast.makeText(SenderActivity.this, "指定成员 不能为空 或者 选择@all", Toast.LENGTH_LONG).show();
+            show.dismiss()
+        }
+        buttonQYWXApptest.setOnClickListener {
+            val cropID = editTextQYWXAppCorpID.text.toString()
+            val agentID = editTextQYWXAppAgentID.text.toString()
+            val secret = editTextQYWXAppSecret.text.toString()
+            val toUser = editTextQYWXAppToUser.text.toString()
+            //Boolean atAll = switchQYWXAppAtAll.isChecked();
+            if (toUser != null && toUser.isNotEmpty()) {
+                try {
+                    SenderQyWxAppMsg.sendMsg(
+                        0,
+                        handler,
+                        cropID,
+                        agentID,
+                        secret,
+                        toUser,
+                        "测试内容(content)@" + SimpleDateFormat(
+                            "yyyy-MM-dd HH:mm:ss",
+                            Locale.getDefault()
+                        ).format(
+                            Date()
+                        ),
+                        true
+                    )
+                } catch (e: Exception) {
+                    Toast.makeText(this@SenderActivity, "发送失败：" + e.message, Toast.LENGTH_LONG)
+                        .show()
+                    e.printStackTrace()
                 }
+            } else {
+                Toast.makeText(this@SenderActivity, "指定成员 不能为空 或者 选择@all", Toast.LENGTH_LONG).show()
             }
-        });
+        }
     }
 
     //Telegram机器人
-    private void setTelegram(final SenderModel senderModel) {
-        TelegramSettingVo telegramSettingVo = null;
+    private fun setTelegram(senderModel: SenderModel?) {
+        var telegramSettingVo: TelegramSettingVo? = null
         //try phrase json setting
         if (senderModel != null) {
-            String jsonSettingStr = senderModel.getJsonSetting();
+            val jsonSettingStr = senderModel.jsonSetting
             if (jsonSettingStr != null) {
-                telegramSettingVo = JSON.parseObject(jsonSettingStr, TelegramSettingVo.class);
+                telegramSettingVo = JSON.parseObject(jsonSettingStr, TelegramSettingVo::class.java)
             }
         }
-
-        final AlertDialog.Builder alertDialog71 = new AlertDialog.Builder(SenderActivity.this);
-        View view1 = View.inflate(SenderActivity.this, R.layout.alert_dialog_setview_telegram, null);
-
-        final EditText editTextTelegramName = view1.findViewById(R.id.editTextTelegramName);
-        if (senderModel != null) editTextTelegramName.setText(senderModel.getName());
-        final EditText editTextTelegramApiToken = view1.findViewById(R.id.editTextTelegramApiToken);
-        if (telegramSettingVo != null)
-            editTextTelegramApiToken.setText(telegramSettingVo.getApiToken());
-        final EditText editTextTelegramChatId = view1.findViewById(R.id.editTextTelegramChatId);
-        if (telegramSettingVo != null)
-            editTextTelegramChatId.setText(telegramSettingVo.getChatId());
-
-        Button buttonTelegramOk = view1.findViewById(R.id.buttonTelegramOk);
-        Button buttonTelegramDel = view1.findViewById(R.id.buttonTelegramDel);
-        Button buttonTelegramTest = view1.findViewById(R.id.buttonTelegramTest);
+        val alertDialog71 = AlertDialog.Builder(this@SenderActivity)
+        val view1 = View.inflate(this@SenderActivity, R.layout.alert_dialog_setview_telegram, null)
+        val editTextTelegramName = view1.findViewById<EditText>(R.id.editTextTelegramName)
+        if (senderModel != null) editTextTelegramName.setText(senderModel.name)
+        val editTextTelegramApiToken = view1.findViewById<EditText>(R.id.editTextTelegramApiToken)
+        if (telegramSettingVo != null) editTextTelegramApiToken.setText(telegramSettingVo.apiToken)
+        val editTextTelegramChatId = view1.findViewById<EditText>(R.id.editTextTelegramChatId)
+        if (telegramSettingVo != null) editTextTelegramChatId.setText(telegramSettingVo.chatId)
+        val buttonTelegramOk = view1.findViewById<Button>(R.id.buttonTelegramOk)
+        val buttonTelegramDel = view1.findViewById<Button>(R.id.buttonTelegramDel)
+        val buttonTelegramTest = view1.findViewById<Button>(R.id.buttonTelegramTest)
         alertDialog71
-                .setTitle(R.string.settelegramtitle)
-                .setIcon(R.mipmap.telegram)
-                .setView(view1)
-                .create();
-        final AlertDialog show = alertDialog71.show();
+            .setTitle(R.string.settelegramtitle)
+            .setIcon(R.mipmap.telegram)
+            .setView(view1)
+            .create()
+        val show = alertDialog71.show()
+        buttonTelegramOk.setOnClickListener {
+            if (senderModel == null) {
+                val newSenderModel = SenderModel()
+                newSenderModel.name = editTextTelegramName.text.toString()
+                newSenderModel.type = SenderModel.TYPE_TELEGRAM
+                newSenderModel.setStatus(SenderModel.STATUS_ON)
 
-        buttonTelegramOk.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                if (senderModel == null) {
-                    SenderModel newSenderModel = new SenderModel();
-                    newSenderModel.setName(editTextTelegramName.getText().toString());
-                    newSenderModel.setType(TYPE_TELEGRAM);
-                    newSenderModel.setStatus(STATUS_ON);
-                    TelegramSettingVo telegramSettingVoNew = new TelegramSettingVo(
-                            editTextTelegramApiToken.getText().toString(),
-                            editTextTelegramChatId.getText().toString()
-                    );
-                    newSenderModel.setJsonSetting(JSON.toJSONString(telegramSettingVoNew));
-                    SenderUtil.addSender(newSenderModel);
-                    initSenders();
-                    adapter.add(senderModels);
-                } else {
-                    senderModel.setName(editTextTelegramName.getText().toString());
-                    senderModel.setType(TYPE_TELEGRAM);
-                    senderModel.setStatus(STATUS_ON);
-                    TelegramSettingVo telegramSettingVoNew = new TelegramSettingVo(
-                            editTextTelegramApiToken.getText().toString(),
-                            editTextTelegramChatId.getText().toString()
-                    );
-                    senderModel.setJsonSetting(JSON.toJSONString(telegramSettingVoNew));
-                    SenderUtil.updateSender(senderModel);
-                    initSenders();
-                    adapter.update(senderModels);
-                }
-
-                show.dismiss();
-
+                val telegramSettingVoNew = TelegramSettingVo(
+                    editTextTelegramApiToken.text.toString(),
+                    editTextTelegramChatId.text.toString()
+                )
+                newSenderModel.jsonSetting = JSON.toJSONString(telegramSettingVoNew)
+                SenderUtil.addSender(newSenderModel)
+                initSenders()
+                adapter!!.add(senderModels)
+            } else {
+                senderModel.name = editTextTelegramName.text.toString()
+                senderModel.type = SenderModel.TYPE_TELEGRAM
+                senderModel.setStatus(SenderModel.STATUS_ON)
+                val telegramSettingVoNew = TelegramSettingVo(
+                    editTextTelegramApiToken.text.toString(),
+                    editTextTelegramChatId.text.toString()
+                )
+                senderModel.jsonSetting = JSON.toJSONString(telegramSettingVoNew)
+                SenderUtil.updateSender(senderModel)
+                initSenders()
+                adapter!!.update(senderModels)
             }
-        });
-        buttonTelegramDel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (senderModel != null) {
-                    SenderUtil.delSender(senderModel.getId());
-                    initSenders();
-                    adapter.del(senderModels);
-                }
-                show.dismiss();
+            show.dismiss()
+        }
+        buttonTelegramDel.setOnClickListener {
+            if (senderModel != null) {
+                SenderUtil.delSender(senderModel.id)
+                initSenders()
+                adapter!!.del(senderModels)
             }
-        });
-        buttonTelegramTest.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String apiToken = editTextTelegramApiToken.getText().toString();
-                String chatId = editTextTelegramChatId.getText().toString();
-                if (!apiToken.isEmpty() && !chatId.isEmpty()) {
-                    try {
-                        SenderTelegramMsg.sendMsg(0, handler, apiToken, chatId, "19999999999", "【京东】验证码为387481（切勿将验证码告知他人），请在页面中输入完成验证，如有问题请点击 ihelp.jd.com 联系京东客服");
-                    } catch (Exception e) {
-                        Toast.makeText(SenderActivity.this, "发送失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
-                        e.printStackTrace();
-                    }
-                } else {
-                    Toast.makeText(SenderActivity.this, "机器人的ApiToken 和 被通知人的ChatId 都不能为空", Toast.LENGTH_LONG).show();
+            show.dismiss()
+        }
+        buttonTelegramTest.setOnClickListener {
+            val apiToken = editTextTelegramApiToken.text.toString()
+            val chatId = editTextTelegramChatId.text.toString()
+            if (apiToken.isNotEmpty() && chatId.isNotEmpty()) {
+                try {
+                    SenderTelegramMsg.sendMsg(
+                        0,
+                        handler,
+                        apiToken,
+                        chatId,
+                        "19999999999",
+                        "【京东】验证码为387481（切勿将验证码告知他人），请在页面中输入完成验证，如有问题请点击 ihelp.jd.com 联系京东客服"
+                    )
+                } catch (e: Exception) {
+                    Toast.makeText(this@SenderActivity, "发送失败：" + e.message, Toast.LENGTH_LONG)
+                        .show()
+                    e.printStackTrace()
                 }
+            } else {
+                Toast.makeText(
+                    this@SenderActivity,
+                    "机器人的ApiToken 和 被通知人的ChatId 都不能为空",
+                    Toast.LENGTH_LONG
+                ).show()
             }
-        });
+        }
     }
 
     //Sms
-    private void setSms(final SenderModel senderModel) {
-        SmsSettingVo smsSettingVo = null;
+    private fun setSms(senderModel: SenderModel?) {
+        var smsSettingVo: SmsSettingVo? = null
         //try phrase json setting
         if (senderModel != null) {
-            String jsonSettingStr = senderModel.getJsonSetting();
-            Log.d(TAG, "jsonSettingStr = " + jsonSettingStr);
+            val jsonSettingStr = senderModel.jsonSetting
+            Log.d(TAG, "jsonSettingStr = $jsonSettingStr")
             if (jsonSettingStr != null) {
-                smsSettingVo = JSON.parseObject(jsonSettingStr, SmsSettingVo.class);
+                smsSettingVo = JSON.parseObject(jsonSettingStr, SmsSettingVo::class.java)
             }
         }
-
-        final AlertDialog.Builder alertDialog71 = new AlertDialog.Builder(SenderActivity.this);
-        View view1 = View.inflate(SenderActivity.this, R.layout.alert_dialog_setview_sms, null);
-
-        final EditText editTextSmsName = view1.findViewById(R.id.editTextSmsName);
-        if (senderModel != null) editTextSmsName.setText(senderModel.getName());
-        final RadioGroup radioGroupSmsSimSlot = (RadioGroup) view1.findViewById(R.id.radioGroupSmsSimSlot);
-        if (smsSettingVo != null) radioGroupSmsSimSlot.check(smsSettingVo.getSmsSimSlotCheckId());
-        final EditText editTextSmsMobiles = view1.findViewById(R.id.editTextSmsMobiles);
-        if (smsSettingVo != null) editTextSmsMobiles.setText(smsSettingVo.getMobiles());
-        final Switch switchSmsOnlyNoNetwork = view1.findViewById(R.id.switchSmsOnlyNoNetwork);
-        if (smsSettingVo != null) switchSmsOnlyNoNetwork.setChecked(smsSettingVo.getOnlyNoNetwork());
-
-        Button buttonSmsOk = view1.findViewById(R.id.buttonSmsOk);
-        Button buttonSmsDel = view1.findViewById(R.id.buttonSmsDel);
-        Button buttonSmsTest = view1.findViewById(R.id.buttonSmsTest);
+        val alertDialog71 = AlertDialog.Builder(this@SenderActivity)
+        val view1 = View.inflate(this@SenderActivity, R.layout.alert_dialog_setview_sms, null)
+        val editTextSmsName = view1.findViewById<EditText>(R.id.editTextSmsName)
+        if (senderModel != null) editTextSmsName.setText(senderModel.name)
+        val radioGroupSmsSimSlot = view1.findViewById<View>(R.id.radioGroupSmsSimSlot) as RadioGroup
+        if (smsSettingVo != null) radioGroupSmsSimSlot.check(smsSettingVo.smsSimSlotCheckId)
+        val editTextSmsMobiles = view1.findViewById<EditText>(R.id.editTextSmsMobiles)
+        if (smsSettingVo != null) editTextSmsMobiles.setText(smsSettingVo.mobiles)
+        val switchSmsOnlyNoNetwork = view1.findViewById<SwitchCompat>(R.id.switchSmsOnlyNoNetwork)
+        if (smsSettingVo != null) switchSmsOnlyNoNetwork.isChecked = smsSettingVo.onlyNoNetwork!!
+        val buttonSmsOk = view1.findViewById<Button>(R.id.buttonSmsOk)
+        val buttonSmsDel = view1.findViewById<Button>(R.id.buttonSmsDel)
+        val buttonSmsTest = view1.findViewById<Button>(R.id.buttonSmsTest)
         alertDialog71
-                .setTitle(R.string.setsmstitle)
-                .setIcon(R.mipmap.sms)
-                .setView(view1)
-                .create();
-        final AlertDialog show = alertDialog71.show();
+            .setTitle(R.string.setsmstitle)
+            .setIcon(R.mipmap.sms)
+            .setView(view1)
+            .create()
+        val show = alertDialog71.show()
+        buttonSmsOk.setOnClickListener {
+            if (senderModel == null) {
+                val newSenderModel = SenderModel()
+                newSenderModel.name = editTextSmsName.text.toString()
+                newSenderModel.type = SenderModel.TYPE_SMS
+                newSenderModel.setStatus(SenderModel.STATUS_ON)
 
-        buttonSmsOk.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                if (senderModel == null) {
-                    SenderModel newSenderModel = new SenderModel();
-                    newSenderModel.setName(editTextSmsName.getText().toString());
-                    newSenderModel.setType(TYPE_SMS);
-                    newSenderModel.setStatus(STATUS_ON);
-                    SmsSettingVo smsSettingVoNew = new SmsSettingVo(
-                            newSenderModel.getSmsSimSlotId(radioGroupSmsSimSlot.getCheckedRadioButtonId()),
-                            editTextSmsMobiles.getText().toString(),
-                            switchSmsOnlyNoNetwork.isChecked()
-                    );
-                    newSenderModel.setJsonSetting(JSON.toJSONString(smsSettingVoNew));
-                    SenderUtil.addSender(newSenderModel);
-                    initSenders();
-                    adapter.add(senderModels);
-                } else {
-                    senderModel.setName(editTextSmsName.getText().toString());
-                    senderModel.setType(TYPE_SMS);
-                    senderModel.setStatus(STATUS_ON);
-                    SmsSettingVo smsSettingVoNew = new SmsSettingVo(
-                            senderModel.getSmsSimSlotId(radioGroupSmsSimSlot.getCheckedRadioButtonId()),
-                            editTextSmsMobiles.getText().toString(),
-                            switchSmsOnlyNoNetwork.isChecked()
-                    );
-                    senderModel.setJsonSetting(JSON.toJSONString(smsSettingVoNew));
-                    SenderUtil.updateSender(senderModel);
-                    initSenders();
-                    adapter.update(senderModels);
-                }
-
-                show.dismiss();
-
+                val smsSettingVoNew = SmsSettingVo(
+                    newSenderModel.getSmsSimSlotId(radioGroupSmsSimSlot.checkedRadioButtonId),
+                    editTextSmsMobiles.text.toString(),
+                    switchSmsOnlyNoNetwork.isChecked
+                )
+                newSenderModel.jsonSetting = JSON.toJSONString(smsSettingVoNew)
+                SenderUtil.addSender(newSenderModel)
+                initSenders()
+                adapter!!.add(senderModels)
+            } else {
+                senderModel.name = editTextSmsName.text.toString()
+                senderModel.type = SenderModel.TYPE_SMS
+                senderModel.setStatus(SenderModel.STATUS_ON)
+                val smsSettingVoNew = SmsSettingVo(
+                    senderModel.getSmsSimSlotId(radioGroupSmsSimSlot.checkedRadioButtonId),
+                    editTextSmsMobiles.text.toString(),
+                    switchSmsOnlyNoNetwork.isChecked
+                )
+                senderModel.jsonSetting = JSON.toJSONString(smsSettingVoNew)
+                SenderUtil.updateSender(senderModel)
+                initSenders()
+                adapter!!.update(senderModels)
             }
-        });
-        buttonSmsDel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (senderModel != null) {
-                    SenderUtil.delSender(senderModel.getId());
-                    initSenders();
-                    adapter.del(senderModels);
-                }
-                show.dismiss();
+            show.dismiss()
+        }
+        buttonSmsDel.setOnClickListener {
+            if (senderModel != null) {
+                SenderUtil.delSender(senderModel.id)
+                initSenders()
+                adapter!!.del(senderModels)
             }
-        });
-        buttonSmsTest.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                int simSlot = 0;
-                if (R.id.btnSmsSimSlot2 == radioGroupSmsSimSlot.getCheckedRadioButtonId()) {
-                    simSlot = 1;
-                }
-                String mobiles = editTextSmsMobiles.getText().toString();
-                Boolean onlyNoNetwork = switchSmsOnlyNoNetwork.isChecked();
-                if (!mobiles.isEmpty() && !mobiles.isEmpty()) {
-                    try {
-                        SenderSmsMsg.sendMsg(0, handler, simSlot, mobiles, onlyNoNetwork, "19999999999", "【京东】验证码为387481（切勿将验证码告知他人），请在页面中输入完成验证，如有问题请点击 ihelp.jd.com 联系京东客服");
-                    } catch (Exception e) {
-                        Toast.makeText(SenderActivity.this, "发送失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
-                        e.printStackTrace();
-                    }
-                } else {
-                    Toast.makeText(SenderActivity.this, "接收手机号不能为空", Toast.LENGTH_LONG).show();
-                }
+            show.dismiss()
+        }
+        buttonSmsTest.setOnClickListener {
+            var simSlot = 0
+            if (R.id.btnSmsSimSlot2 == radioGroupSmsSimSlot.checkedRadioButtonId) {
+                simSlot = 1
             }
-        });
+            val mobiles = editTextSmsMobiles.text.toString()
+            val onlyNoNetwork = switchSmsOnlyNoNetwork.isChecked
+            if (mobiles.isNotEmpty() && mobiles.isNotEmpty()) {
+                try {
+                    SenderSmsMsg.sendMsg(
+                        0,
+                        handler,
+                        simSlot,
+                        mobiles,
+                        onlyNoNetwork,
+                        "19999999999",
+                        "【京东】验证码为387481（切勿将验证码告知他人），请在页面中输入完成验证，如有问题请点击 ihelp.jd.com 联系京东客服"
+                    )
+                } catch (e: Exception) {
+                    Toast.makeText(this@SenderActivity, "发送失败：" + e.message, Toast.LENGTH_LONG)
+                        .show()
+                    e.printStackTrace()
+                }
+            } else {
+                Toast.makeText(this@SenderActivity, "接收手机号不能为空", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
-    @Override
-    protected void onDestroy() {
-        Log.d(TAG, "onDestroy");
-        super.onDestroy();
+    override fun onDestroy() {
+        Log.d(TAG, "onDestroy")
+        super.onDestroy()
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        MobclickAgent.onResume(this);
+    override fun onResume() {
+        super.onResume()
+        MobclickAgent.onResume(this)
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        MobclickAgent.onPause(this);
+    override fun onPause() {
+        super.onPause()
+        MobclickAgent.onPause(this)
     }
 
+    companion object {
+        const val NOTIFY = 0x9731993
+        private const val TAG = "SenderActivity"
+    }
 }

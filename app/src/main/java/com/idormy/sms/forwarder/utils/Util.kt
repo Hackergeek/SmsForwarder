@@ -1,101 +1,88 @@
-package com.idormy.sms.forwarder.utils;
+package com.idormy.sms.forwarder.utils
 
-import android.content.Context;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-import android.os.Environment;
+import android.content.Context
+import android.os.Environment
+import java.io.File
+import java.io.FileInputStream
+import java.io.IOException
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.*
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Properties;
-import java.util.TimeZone;
-
-public class aUtil {
-    private static String TAG = "aUtil";
-
-    private static Context context = null;
-
+object Util {
     /**
      * 判断是否为MIUI系统，参考http://blog.csdn.net/xx326664162/article/details/52438706
      *
      * @return
      */
-    public static boolean isMIUI() {
-        try {
-            String KEY_MIUI_VERSION_CODE = "ro.miui.ui.version.code";
-            String KEY_MIUI_VERSION_NAME = "ro.miui.ui.version.name";
-            String KEY_MIUI_INTERNAL_STORAGE = "ro.miui.internal.storage";
-            Properties prop = new Properties();
-            prop.load(new FileInputStream(new File(Environment.getRootDirectory(), "build.prop")));
-
-            return prop.getProperty(KEY_MIUI_VERSION_CODE, null) != null
-                    || prop.getProperty(KEY_MIUI_VERSION_NAME, null) != null
-                    || prop.getProperty(KEY_MIUI_INTERNAL_STORAGE, null) != null;
-        } catch (final IOException e) {
-            return false;
+    val isMIUI: Boolean
+        get() = try {
+            val KEY_MIUI_VERSION_CODE = "ro.miui.ui.version.code"
+            val KEY_MIUI_VERSION_NAME = "ro.miui.ui.version.name"
+            val KEY_MIUI_INTERNAL_STORAGE = "ro.miui.internal.storage"
+            val prop = Properties()
+            prop.load(FileInputStream(File(Environment.getRootDirectory(), "build.prop")))
+            prop.getProperty(KEY_MIUI_VERSION_CODE, null) != null || prop.getProperty(
+                KEY_MIUI_VERSION_NAME,
+                null
+            ) != null || prop.getProperty(KEY_MIUI_INTERNAL_STORAGE, null) != null
+        } catch (e: IOException) {
+            false
         }
+
+    @Throws(Exception::class)
+    fun getVersionName(context: Context): String {
+        // 获取packagemanager的实例
+        val packageManager = context.packageManager
+        // getPackageName()是你当前类的包名，0代表是获取版本信息
+        val packInfo =
+            packageManager.getPackageInfo(context.packageName, 0)
+        return packInfo.versionName
     }
 
-    public static String getVersionName(Context context) throws Exception {
+    @Throws(Exception::class)
+    fun getVersionCode(context: Context): Int {
         // 获取packagemanager的实例
-        PackageManager packageManager = context.getPackageManager();
+        val packageManager = context.packageManager
         // getPackageName()是你当前类的包名，0代表是获取版本信息
-        PackageInfo packInfo = packageManager.getPackageInfo(context.getPackageName(), 0);
-        String version = packInfo.versionName;
-        return version;
-    }
-
-    public static Integer getVersionCode(Context context) throws Exception {
-        // 获取packagemanager的实例
-        PackageManager packageManager = context.getPackageManager();
-        // getPackageName()是你当前类的包名，0代表是获取版本信息
-        PackageInfo packInfo = packageManager.getPackageInfo(context.getPackageName(), 0);
-        Integer versionCode = packInfo.versionCode;
-        return versionCode;
+        val packInfo =
+            packageManager.getPackageInfo(context.packageName, 0)
+        return packInfo.versionCode
     }
 
     //友好时间显示
-    public static String friendlyTime(String utcTime) {
-        SimpleDateFormat utcFormater = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        utcFormater.setTimeZone(TimeZone.getTimeZone("UTC"));//时区定义并进行时间获取
-        Date utcDate = null;
-        try {
-            utcDate = utcFormater.parse(utcTime);
-        } catch (ParseException e) {
-            e.printStackTrace();
-            return utcTime;
+    @JvmStatic
+    fun friendlyTime(utcTime: String): String {
+        val utcFormater = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        utcFormater.timeZone = TimeZone.getTimeZone("UTC") //时区定义并进行时间获取
+        val utcDate = try {
+            utcFormater.parse(utcTime)
+        } catch (e: ParseException) {
+            e.printStackTrace()
+            return utcTime
         }
 
         //获取utcDate距离当前的秒数
-        int ct = (int) ((System.currentTimeMillis() - utcDate.getTime()) / 1000);
-
+        val ct = ((System.currentTimeMillis() - utcDate.time) / 1000).toInt()
         if (ct == 0) {
-            return "刚刚";
+            return "刚刚"
         }
-
-        if (ct > 0 && ct < 60) {
-            return ct + "秒前";
+        if (ct in 1..59) {
+            return ct.toString() + "秒前"
         }
-
-        if (ct >= 60 && ct < 3600) {
-            return Math.max(ct / 60, 1) + "分钟前";
+        if (ct in 60..3599) {
+            return (ct / 60).coerceAtLeast(1).toString() + "分钟前"
         }
-        if (ct >= 3600 && ct < 86400) {
-            return ct / 3600 + "小时前";
+        if (ct in 3600..86399) {
+            return (ct / 3600).toString() + "小时前"
         }
-        if (ct >= 86400 && ct < 2592000) { //86400 * 30
-            int day = ct / 86400;
-            return day + "天前";
+        if (ct in 86400..2591999) { //86400 * 30
+            val day = ct / 86400
+            return day.toString() + "天前"
         }
-        if (ct >= 2592000 && ct < 31104000) { //86400 * 30
-            return ct / 2592000 + "月前";
-        }
-
-        return ct / 31104000 + "年前";
+        return if (ct in 2592000..31103999) { //86400 * 30
+            (ct / 2592000).toString() + "月前"
+        } else (ct / 31104000).toString() + "年前"
     }
 
     /**
@@ -104,24 +91,20 @@ public class aUtil {
      * @param utcTime UTC时间
      * @return 本地时间格式的时间
      */
-    public static String utc2Local(String utcTime) {
-        String utcTimePatten = "yyyy-MM-dd HH:mm:ss";
-        String localTimePatten = "yyyy-MM-dd HH:mm:ss";
-        SimpleDateFormat utcFormater = new SimpleDateFormat(utcTimePatten);
-        utcFormater.setTimeZone(TimeZone.getTimeZone("UTC"));//时区定义并进行时间获取
-
-        Date utcDate = null;
-        try {
-            utcDate = utcFormater.parse(utcTime);
-        } catch (ParseException e) {
-            e.printStackTrace();
-            return utcTime;
+    fun utc2Local(utcTime: String): String {
+        val utcTimePatten = "yyyy-MM-dd HH:mm:ss"
+        val localTimePatten = "yyyy-MM-dd HH:mm:ss"
+        val utcFormat = SimpleDateFormat(utcTimePatten, Locale.getDefault())
+        utcFormat.timeZone = TimeZone.getTimeZone("UTC") //时区定义并进行时间获取
+        val utcDate = try {
+            utcFormat.parse(utcTime)
+        } catch (e: ParseException) {
+            e.printStackTrace()
+            return utcTime
         }
-
-        SimpleDateFormat localFormater = new SimpleDateFormat(localTimePatten);
-        localFormater.setTimeZone(TimeZone.getDefault());
-        String localTime = localFormater.format(utcDate.getTime());
-        return localTime;
+        val localFormat =
+            SimpleDateFormat(localTimePatten, Locale.getDefault())
+        localFormat.timeZone = TimeZone.getDefault()
+        return localFormat.format(utcDate.time)
     }
-
 }

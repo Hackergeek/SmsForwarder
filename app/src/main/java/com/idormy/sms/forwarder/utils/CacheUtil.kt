@@ -1,12 +1,11 @@
-package com.idormy.sms.forwarder.utils;
+package com.idormy.sms.forwarder.utils
 
-import android.content.Context;
-import android.os.Environment;
+import android.content.Context
+import android.os.Environment
+import java.io.File
+import java.math.BigDecimal
 
-import java.io.File;
-import java.math.BigDecimal;
-
-public class CacheUtil {
+object CacheUtil {
     /**
      * 获取缓存大小
      *
@@ -14,57 +13,59 @@ public class CacheUtil {
      * @return
      * @throws Exception
      */
-    public static String getTotalCacheSize(Context context) throws Exception {
-        long cacheSize = getFolderSize(context.getCacheDir());
-        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
-            cacheSize += getFolderSize(context.getExternalCacheDir());
+    @Throws(Exception::class)
+    fun getTotalCacheSize(context: Context): String {
+        var cacheSize = getFolderSize(context.cacheDir)
+        if (Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED) {
+            cacheSize += getFolderSize(context.externalCacheDir)
         }
-        return getFormatSize(cacheSize);
+        return getFormatSize(cacheSize.toDouble())
     }
 
     /***
      * 清理所有缓存
      * @param context
      */
-    public static void clearAllCache(Context context) {
-        deleteDir(context.getCacheDir());
-        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
-            deleteDir(context.getExternalCacheDir());
+    fun clearAllCache(context: Context) {
+        deleteDir(context.cacheDir)
+        if (Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED) {
+            deleteDir(context.externalCacheDir)
         }
     }
 
-    private static boolean deleteDir(File dir) {
-        if (dir != null && dir.isDirectory()) {
-            String[] children = dir.list();
-            for (int i = 0; i < children.length; i++) {
-                boolean success = deleteDir(new File(dir, children[i]));
+    private fun deleteDir(dir: File?): Boolean {
+        if (dir != null && dir.isDirectory) {
+            val children = dir.list()
+            for (i in children.indices) {
+                val success = deleteDir(File(dir, children[i]))
                 if (!success) {
-                    return false;
+                    return false
                 }
             }
         }
-        return dir.delete();
+        return dir!!.delete()
     }
 
     // 获取文件
     //Context.getExternalFilesDir() --> SDCard/Android/data/你的应用的包名/files/ 目录，一般放一些长时间保存的数据
     //Context.getExternalCacheDir() --> SDCard/Android/data/你的应用包名/cache/目录，一般存放临时缓存数据
-    public static long getFolderSize(File file) throws Exception {
-        long size = 0;
+    @Throws(Exception::class)
+    fun getFolderSize(file: File?): Long {
+        var size: Long = 0
         try {
-            File[] fileList = file.listFiles();
-            for (int i = 0; i < fileList.length; i++) {
+            val fileList = file!!.listFiles()
+            for (i in fileList.indices) {
                 // 如果下面还有文件
-                if (fileList[i].isDirectory()) {
-                    size = size + getFolderSize(fileList[i]);
+                size = if (fileList[i].isDirectory) {
+                    size + getFolderSize(fileList[i])
                 } else {
-                    size = size + fileList[i].length();
+                    size + fileList[i].length()
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        return size;
+        return size
     }
 
     /**
@@ -73,32 +74,27 @@ public class CacheUtil {
      * @param size
      * @return
      */
-    public static String getFormatSize(double size) {
-        double kiloByte = size / 1024;
+    private fun getFormatSize(size: Double): String {
+        val kiloByte = size / 1024
         if (kiloByte < 1) {
-            return "0KB";
+            return "0KB"
         }
-
-        double megaByte = kiloByte / 1024;
+        val megaByte = kiloByte / 1024
         if (megaByte < 1) {
-            BigDecimal result1 = new BigDecimal(Double.toString(kiloByte));
-            return result1.setScale(2, BigDecimal.ROUND_HALF_UP).toPlainString() + "KB";
+            val result1 = BigDecimal(kiloByte.toString())
+            return result1.setScale(2, BigDecimal.ROUND_HALF_UP).toPlainString() + "KB"
         }
-
-        double gigaByte = megaByte / 1024;
+        val gigaByte = megaByte / 1024
         if (gigaByte < 1) {
-            BigDecimal result2 = new BigDecimal(Double.toString(megaByte));
-            return result2.setScale(2, BigDecimal.ROUND_HALF_UP).toPlainString() + "MB";
+            val result2 = BigDecimal(megaByte.toString())
+            return result2.setScale(2, BigDecimal.ROUND_HALF_UP).toPlainString() + "MB"
         }
-
-        double teraBytes = gigaByte / 1024;
+        val teraBytes = gigaByte / 1024
         if (teraBytes < 1) {
-            BigDecimal result3 = new BigDecimal(Double.toString(gigaByte));
-            return result3.setScale(2, BigDecimal.ROUND_HALF_UP).toPlainString() + "GB";
+            val result3 = BigDecimal(gigaByte.toString())
+            return result3.setScale(2, BigDecimal.ROUND_HALF_UP).toPlainString() + "GB"
         }
-
-        BigDecimal result4 = new BigDecimal(teraBytes);
-        return result4.setScale(2, BigDecimal.ROUND_HALF_UP).toPlainString() + "TB";
+        val result4 = BigDecimal(teraBytes)
+        return result4.setScale(2, BigDecimal.ROUND_HALF_UP).toPlainString() + "TB"
     }
-
 }

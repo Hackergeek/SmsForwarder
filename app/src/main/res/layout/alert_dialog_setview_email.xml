@@ -78,7 +78,7 @@
                 android:layout_height="wrap_content"
                 android:text="开启SSL" />
 
-            <Switch
+            <androidx.appcompat.widget.SwitchCompat
                 android:id="@+id/switchEmailSSl"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

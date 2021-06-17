@@ -106,8 +106,8 @@
                 android:layout_height="wrap_content"
                 android:text="是否@所有人" />
 
-            <Switch
-                android:id="@+id/switchDingdingAtAll"
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchDingDingAtAll"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:checked="false"

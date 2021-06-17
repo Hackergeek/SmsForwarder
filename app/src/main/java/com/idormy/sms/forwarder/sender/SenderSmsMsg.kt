@@ -1,29 +1,37 @@
-package com.idormy.sms.forwarder.sender;
+package com.idormy.sms.forwarder.sender
 
-import android.os.Handler;
-import android.util.Log;
+import android.os.Handler
+import android.util.Log
+import com.idormy.sms.forwarder.utils.LogUtil.updateLog
+import com.idormy.sms.forwarder.utils.SimUtil.getSubscriptionIdBySimId
+import com.idormy.sms.forwarder.utils.SmsUtil.sendSms
 
-import com.idormy.sms.forwarder.utils.LogUtil;
-import com.idormy.sms.forwarder.utils.SimUtil;
-import com.idormy.sms.forwarder.utils.SmsUtil;
-
-public class SenderSmsMsg {
-
-    static String TAG = "SenderSmsMsg";
-
-    public static void sendMsg(final long logId, final Handler handError, int simSlot, String mobiles, Boolean onlyNoNetwork, String from, String text) throws Exception {
-        Log.i(TAG, "sendMsg simSlot:" + simSlot + " mobiles:" + mobiles + " onlyNoNetwork:" + onlyNoNetwork + " from:" + from + " text:" + text);
+object SenderSmsMsg {
+    var TAG = "SenderSmsMsg"
+    @Throws(Exception::class)
+    fun sendMsg(
+        logId: Long,
+        handError: Handler?,
+        simSlot: Int,
+        mobiles: String?,
+        onlyNoNetwork: Boolean?,
+        from: String?,
+        text: String
+    ) {
+        Log.i(
+            TAG,
+            "sendMsg simSlot:$simSlot mobiles:$mobiles onlyNoNetwork:$onlyNoNetwork from:$from text:$text"
+        )
 
         //TODO：simSlot转subId
-        int subId = SimUtil.getSubscriptionIdBySimId(simSlot);
-        String res = SmsUtil.sendSms(subId, mobiles, text);
+        val subId = getSubscriptionIdBySimId(simSlot)
+        val res = sendSms(subId, mobiles!!, text)
 
         //TODO:粗略解析是否发送成功
         if (res == null) {
-            LogUtil.updateLog(logId, 1, "发送成功");
+            updateLog(logId, 1, "发送成功")
         } else {
-            LogUtil.updateLog(logId, 0, res);
+            updateLog(logId, 0, res)
         }
     }
-
 }

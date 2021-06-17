@@ -1,101 +1,90 @@
-package com.idormy.sms.forwarder.sender;
+package com.idormy.sms.forwarder.sender
 
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
-import android.util.Log;
+import android.os.Bundle
+import android.os.Handler
+import android.os.Message
+import android.util.Log
+import com.alibaba.fastjson.JSON
+import com.idormy.sms.forwarder.SenderActivity
+import com.idormy.sms.forwarder.utils.LogUtil.updateLog
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import java.io.IOException
+import java.util.*
 
-import com.alibaba.fastjson.JSON;
-import com.idormy.sms.forwarder.utils.LogUtil;
+object SenderTelegramMsg {
+    var TAG = "SenderTelegramMsg"
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-
-import static com.idormy.sms.forwarder.SenderActivity.NOTIFY;
-
-public class SenderTelegramMsg {
-
-    static String TAG = "SenderTelegramMsg";
-
-    public static void sendMsg(final long logId, final Handler handError, String apiToken, String chatId, String from, String text) throws Exception {
-        Log.i(TAG, "sendMsg apiToken:" + apiToken + " chatId:" + chatId + " text:" + text);
-
+    @Throws(Exception::class)
+    fun sendMsg(
+        logId: Long,
+        handError: Handler?,
+        apiToken: String?,
+        chatId: String?,
+        from: String?,
+        text: String
+    ) {
+        var text = text
+        Log.i(TAG, "sendMsg apiToken:$apiToken chatId:$chatId text:$text")
         if (apiToken == null || apiToken.isEmpty()) {
-            return;
+            return
         }
 
         //特殊处理避免标题重复
-        text = text.replaceFirst("^" + from + "(.*)", "").replaceAll("#", "井").trim();
-
-        String sendUrl = "https://api.telegram.org/bot" + apiToken + "/sendMessage";
-        Log.d(TAG, "sendUrl：" + sendUrl);
-
-        Map bodyMap = new HashMap();
-        bodyMap.put("chat_id", chatId);
-        bodyMap.put("text", text);
-        bodyMap.put("parse_mode", "HTML");
-        String bodyMsg = JSON.toJSONString(bodyMap);
-        Log.d(TAG, "body：" + bodyMsg);
-
-        OkHttpClient client = new OkHttpClient();
-        RequestBody requestBody = RequestBody.create(MediaType.parse("application/json;charset=utf-8"), bodyMsg);
-
-        final Request request = new Request.Builder()
-                .url(sendUrl)
-                .addHeader("Content-Type", "application/json; charset=utf-8")
-                .post(requestBody)
-                .build();
-        Call call = client.newCall(request);
-        call.enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, final IOException e) {
-                LogUtil.updateLog(logId, 0, e.getMessage());
-                Log.d(TAG, "onFailure：" + e.getMessage());
-
+        text = text.replaceFirst("^" + from + "(.*)".toRegex(), "").replace("#".toRegex(), "井")
+            .trim { it <= ' ' }
+        val sendUrl = "https://api.telegram.org/bot$apiToken/sendMessage"
+        Log.d(TAG, "sendUrl：$sendUrl")
+        val bodyMap: MutableMap<Any?, Any?> = HashMap<Any?, Any?>()
+        bodyMap["chat_id"] = chatId
+        bodyMap["text"] = text
+        bodyMap["parse_mode"] = "HTML"
+        val bodyMsg = JSON.toJSONString(bodyMap)
+        Log.d(TAG, "body：$bodyMsg")
+        val client = OkHttpClient()
+        val requestBody =
+            RequestBody.create("application/json;charset=utf-8".toMediaTypeOrNull(), bodyMsg)
+        val request: Request = Request.Builder()
+            .url(sendUrl)
+            .addHeader("Content-Type", "application/json; charset=utf-8")
+            .post(requestBody)
+            .build()
+        val call = client.newCall(request)
+        call.enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                updateLog(logId, 0, e.message)
+                Log.d(TAG, "onFailure：" + e.message)
                 if (handError != null) {
-                    Message msg = new Message();
-                    msg.what = NOTIFY;
-                    Bundle bundle = new Bundle();
-                    bundle.putString("DATA", "发送失败：" + e.getMessage());
-                    msg.setData(bundle);
-                    handError.sendMessage(msg);
+                    val msg = Message()
+                    msg.what = SenderActivity.NOTIFY
+                    val bundle = Bundle()
+                    bundle.putString("DATA", "发送失败：" + e.message)
+                    msg.data = bundle
+                    handError.sendMessage(msg)
                 }
-
             }
 
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                final String responseStr = response.body().string();
-                Log.d(TAG, "Code：" + response.code() + responseStr);
+            @Throws(IOException::class)
+            override fun onResponse(call: Call, response: Response) {
+                val responseStr = response.body!!.string()
+                Log.d(TAG, "Code：" + response.code + responseStr)
 
                 //TODO:粗略解析是否发送成功
                 if (responseStr.contains("\"ok\":true")) {
-                    LogUtil.updateLog(logId, 1, responseStr);
+                    updateLog(logId, 1, responseStr)
                 } else {
-                    LogUtil.updateLog(logId, 0, responseStr);
+                    updateLog(logId, 0, responseStr)
                 }
-
                 if (handError != null) {
-                    Message msg = new Message();
-                    msg.what = NOTIFY;
-                    Bundle bundle = new Bundle();
-                    bundle.putString("DATA", "发送状态：" + responseStr);
-                    msg.setData(bundle);
-                    handError.sendMessage(msg);
-                    Log.d(TAG, "Response：" + response.code() + responseStr);
+                    val msg = Message()
+                    msg.what = SenderActivity.NOTIFY
+                    val bundle = Bundle()
+                    bundle.putString("DATA", "发送状态：$responseStr")
+                    msg.data = bundle
+                    handError.sendMessage(msg)
+                    Log.d(TAG, "Response：" + response.code + responseStr)
                 }
-
             }
-        });
+        })
     }
-
 }

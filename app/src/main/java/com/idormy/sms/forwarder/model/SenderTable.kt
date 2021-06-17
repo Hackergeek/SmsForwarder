@@ -1,20 +1,18 @@
-package com.idormy.sms.forwarder.model;
+package com.idormy.sms.forwarder.model
 
-import android.provider.BaseColumns;
+import android.provider.BaseColumns
 
-public final class SenderTable {
-    // To prevent someone from accidentally instantiating the contract class,
-    // make the constructor private.
-    private SenderTable() {
-    }
-
+class SenderTable  // To prevent someone from accidentally instantiating the contract class,
+// make the constructor private.
+private constructor() {
     /* Inner class that defines the table contents */
-    public static class SenderEntry implements BaseColumns {
-        public static final String TABLE_NAME = "sender";
-        public static final String COLUMN_NAME_NAME = "name";
-        public static final String COLUMN_NAME_STATUS = "status";
-        public static final String COLUMN_NAME_TYPE = "type";
-        public static final String COLUMN_NAME_JSON_SETTING = "json_setting";
-        public static final String COLUMN_NAME_TIME = "time";
+    object SenderEntry : BaseColumns {
+        const val _ID = BaseColumns._ID
+        const val TABLE_NAME = "sender"
+        const val COLUMN_NAME_NAME = "name"
+        const val COLUMN_NAME_STATUS = "status"
+        const val COLUMN_NAME_TYPE = "type"
+        const val COLUMN_NAME_JSON_SETTING = "json_setting"
+        const val COLUMN_NAME_TIME = "time"
     }
 }

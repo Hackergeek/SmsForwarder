@@ -1,52 +1,24 @@
-package com.idormy.sms.forwarder.model.vo;
+package com.idormy.sms.forwarder.model.vo
 
-import com.idormy.sms.forwarder.R;
+import com.idormy.sms.forwarder.R
+import java.io.Serializable
 
-import java.io.Serializable;
+class WebNotifySettingVo : Serializable {
+    var webServer: String? = null
+    var secret: String? = null
+    var method: String? = null
 
-public class WebNotifySettingVo implements Serializable {
-    private String webServer;
-    private String secret;
-    private String method;
-
-    public WebNotifySettingVo() {
+    constructor() {}
+    constructor(webServer: String?, secret: String?, method: String?) {
+        this.webServer = webServer
+        this.secret = secret
+        this.method = method
     }
 
-    public WebNotifySettingVo(String webServer, String secret, String method) {
-        this.webServer = webServer;
-        this.secret = secret;
-        this.method = method;
-    }
-
-    public String getWebServer() {
-        return webServer;
-    }
-
-    public void setWebServer(String webServer) {
-        this.webServer = webServer;
-    }
-
-    public String getSecret() {
-        return secret;
-    }
-
-    public void setSecret(String secret) {
-        this.secret = secret;
-    }
-
-    public String getMethod() {
-        return method;
-    }
-
-    public void setMethod(String method) {
-        this.method = method;
-    }
-
-    public int getWebNotifyMethodCheckId() {
-        if (method == null || method.equals("POST")) {
-            return R.id.radioWebNotifyMethodPost;
+    val webNotifyMethodCheckId: Int
+        get() = if (method == null || method == "POST") {
+            R.id.radioWebNotifyMethodPost
         } else {
-            return R.id.radioWebNotifyMethodGet;
+            R.id.radioWebNotifyMethodGet
         }
-    }
 }

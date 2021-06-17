@@ -115,7 +115,7 @@
                 android:text="是否@all"
                 android:textStyle="bold" />
 
-            <Switch
+            <androidx.appcompat.widget.SwitchCompat
                 android:id="@+id/switchQYWXAppAtAll"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

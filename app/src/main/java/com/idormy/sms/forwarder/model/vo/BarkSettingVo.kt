@@ -1,22 +1,12 @@
-package com.idormy.sms.forwarder.model.vo;
+package com.idormy.sms.forwarder.model.vo
 
-import java.io.Serializable;
+import java.io.Serializable
 
-public class BarkSettingVo implements Serializable {
-    private String server;
+class BarkSettingVo : Serializable {
+    var server: String? = null
 
-    public BarkSettingVo() {
-    }
-
-    public BarkSettingVo(String server) {
-        this.server = server;
-    }
-
-    public String getServer() {
-        return server;
-    }
-
-    public void setServer(String server) {
-        this.server = server;
+    constructor() {}
+    constructor(server: String?) {
+        this.server = server
     }
 }

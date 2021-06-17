@@ -1,70 +1,57 @@
-package com.idormy.sms.forwarder.utils;
+package com.idormy.sms.forwarder.utils
 
-import java.security.KeyStore;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
-import java.util.Arrays;
+import java.security.KeyStore
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import java.util.*
+import javax.net.ssl.*
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
-
-public class CertUtils {
-
+object CertUtils {
     //获取这个SSLSocketFactory
-    public static SSLSocketFactory getSSLSocketFactory() {
-        try {
-            SSLContext sslContext = SSLContext.getInstance("SSL");
-            sslContext.init(null, getTrustManager(), new SecureRandom());
-            return sslContext.getSocketFactory();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+    @JvmStatic
+    val sSLSocketFactory: SSLSocketFactory
+        get() = try {
+            val sslContext = SSLContext.getInstance("SSL")
+            sslContext.init(null, trustManager, SecureRandom())
+            sslContext.socketFactory
+        } catch (e: Exception) {
+            throw RuntimeException(e)
         }
-    }
 
     //获取TrustManager
-    private static TrustManager[] getTrustManager() {
-        return new TrustManager[]{
-                new X509TrustManager() {
-                    @Override
-                    public void checkClientTrusted(X509Certificate[] chain, String authType) {
-                    }
-
-                    @Override
-                    public void checkServerTrusted(X509Certificate[] chain, String authType) {
-                    }
-
-                    @Override
-                    public X509Certificate[] getAcceptedIssuers() {
-                        return new X509Certificate[]{};
-                    }
+    private val trustManager: Array<TrustManager>
+        get() = arrayOf(
+            object : X509TrustManager {
+                override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
+                override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
+                override fun getAcceptedIssuers(): Array<X509Certificate> {
+                    return arrayOf()
                 }
-        };
-    }
+            }
+        )
 
     //获取HostnameVerifier
-    public static HostnameVerifier getHostnameVerifier() {
-        return (s, sslSession) -> true;
-    }
-
-    public static X509TrustManager getX509TrustManager() {
-        X509TrustManager trustManager = null;
-        try {
-            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-            trustManagerFactory.init((KeyStore) null);
-            TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
-            if (trustManagers.length != 1 || !(trustManagers[0] instanceof X509TrustManager)) {
-                throw new IllegalStateException("Unexpected default trust managers:" + Arrays.toString(trustManagers));
+    @JvmStatic
+    val hostnameVerifier: HostnameVerifier
+        get() = HostnameVerifier { _: String?, _: SSLSession? -> true }
+    @JvmStatic
+    val x509TrustManager: X509TrustManager?
+        get() {
+            var trustManager: X509TrustManager? = null
+            try {
+                val trustManagerFactory =
+                    TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+                trustManagerFactory.init(null as KeyStore?)
+                val trustManagers = trustManagerFactory.trustManagers
+                check(!(trustManagers.size != 1 || trustManagers[0] !is X509TrustManager)) {
+                    "Unexpected default trust managers:" + Arrays.toString(
+                        trustManagers
+                    )
+                }
+                trustManager = trustManagers[0] as X509TrustManager
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            trustManager = (X509TrustManager) trustManagers[0];
-        } catch (Exception e) {
-            e.printStackTrace();
+            return trustManager
         }
-
-        return trustManager;
-    }
-
 }

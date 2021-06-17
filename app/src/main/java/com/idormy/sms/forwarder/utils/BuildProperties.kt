@@ -1,67 +1,64 @@
-package com.idormy.sms.forwarder.utils;
+package com.idormy.sms.forwarder.utils
 
-import android.os.Environment;
+import android.os.Environment
+import java.io.File
+import java.io.FileInputStream
+import java.io.IOException
+import java.util.*
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-
-public class BuildProperties {
-    private static BuildProperties ourInstance;
-    private final Properties properties;
-
-    private BuildProperties() throws IOException {
-        properties = new Properties();
-        properties.load(new FileInputStream(new File(Environment.getRootDirectory(), "build.prop")));
+class BuildProperties private constructor() {
+    private val properties: Properties = Properties()
+    fun containsKey(key: Any): Boolean {
+        return properties.containsKey(key)
     }
 
-    public static BuildProperties getInstance() throws IOException {
-        if (ourInstance == null) ourInstance = new BuildProperties();
-        return ourInstance;
+    fun containsValue(value: Any): Boolean {
+        return properties.containsValue(value)
     }
 
-    public boolean containsKey(final Object key) {
-        return properties.containsKey(key);
+    fun getProperty(name: String?): String {
+        return properties.getProperty(name)
     }
 
-    public boolean containsValue(final Object value) {
-        return properties.containsValue(value);
+    fun getProperty(name: String?, defaultValue: String?): String {
+        return properties.getProperty(name, defaultValue)
     }
 
-    public String getProperty(final String name) {
-        return properties.getProperty(name);
+    fun entrySet(): Set<Map.Entry<Any, Any>> {
+        return properties.entries
     }
 
-    public String getProperty(final String name, final String defaultValue) {
-        return properties.getProperty(name, defaultValue);
+    val isEmpty: Boolean
+        get() = properties.isEmpty
+
+    fun keys(): Enumeration<*> {
+        return properties.keys()
     }
 
-    public Set<Map.Entry<Object, Object>> entrySet() {
-        return properties.entrySet();
+    fun keySet(): Set<*> {
+        return properties.keys
     }
 
-    public boolean isEmpty() {
-        return properties.isEmpty();
+    fun size(): Int {
+        return properties.size
     }
 
-    public Enumeration keys() {
-        return properties.keys();
+    fun values(): Collection<*> {
+        return properties.values
     }
 
-    public Set keySet() {
-        return properties.keySet();
+    companion object {
+        private var ourInstance: BuildProperties? = null
+
+        @get:Throws(IOException::class)
+        val instance: BuildProperties?
+            get() {
+                if (ourInstance == null) ourInstance = BuildProperties()
+                return ourInstance
+            }
     }
 
-    public int size() {
-        return properties.size();
-    }
-
-    public Collection values() {
-        return properties.values();
+    init {
+        properties.load(FileInputStream(File(Environment.getRootDirectory(), "build.prop")))
     }
 }

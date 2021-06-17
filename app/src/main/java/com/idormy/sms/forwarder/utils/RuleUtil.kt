@@ -1,166 +1,158 @@
-package com.idormy.sms.forwarder.utils;
+package com.idormy.sms.forwarder.utils
 
-import android.content.ContentValues;
-import android.content.Context;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.provider.BaseColumns;
-import android.util.Log;
+import android.content.ContentValues
+import android.content.Context
+import android.database.sqlite.SQLiteDatabase
+import android.provider.BaseColumns
+import android.util.Log
+import com.idormy.sms.forwarder.MyApplication
+import com.idormy.sms.forwarder.model.RuleModel
+import com.idormy.sms.forwarder.model.RuleTable
+import java.util.*
 
-import com.idormy.sms.forwarder.model.RuleModel;
-import com.idormy.sms.forwarder.model.RuleTable;
+object RuleUtil {
+    var TAG = "RuleUtil"
+    var hasInit = false
+    var dbHelper: DbHelper? = null
+    var db: SQLiteDatabase? = null
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class RuleUtil {
-    static String TAG = "RuleUtil";
-    static Boolean hasInit = false;
-    static Context context;
-    static DbHelper dbHelper;
-    static SQLiteDatabase db;
-
-    public static void init(Context context1) {
-        synchronized (hasInit) {
-            if (hasInit) return;
-            hasInit = true;
-            context = context1;
-            dbHelper = new DbHelper(context);
+    @JvmStatic
+    fun init() {
+        synchronized(hasInit) {
+            if (hasInit) return
+            hasInit = true
+            dbHelper = DbHelper(MyApplication.globalContext)
             // Gets the data repository in write mode
-            db = dbHelper.getReadableDatabase();
+            db = dbHelper!!.readableDatabase
         }
     }
 
-    public static long addRule(RuleModel ruleModel) {
+    fun addRule(ruleModel: RuleModel): Long {
 
         // Create a new map of values, where column names are the keys
-        ContentValues values = new ContentValues();
-        values.put(RuleTable.RuleEntry.COLUMN_NAME_FILED, ruleModel.getFiled());
-        values.put(RuleTable.RuleEntry.COLUMN_NAME_CHECK, ruleModel.getCheck());
-        values.put(RuleTable.RuleEntry.COLUMN_NAME_VALUE, ruleModel.getValue());
-        values.put(RuleTable.RuleEntry.COLUMN_NAME_SENDER_ID, ruleModel.getSenderId());
-        values.put(RuleTable.RuleEntry.COLUMN_NAME_SIM_SLOT, ruleModel.getSimSlot());
+        val values = ContentValues()
+        values.put(RuleTable.RuleEntry.COLUMN_NAME_FILED, ruleModel.filed)
+        values.put(RuleTable.RuleEntry.COLUMN_NAME_CHECK, ruleModel.check)
+        values.put(RuleTable.RuleEntry.COLUMN_NAME_VALUE, ruleModel.value)
+        values.put(RuleTable.RuleEntry.COLUMN_NAME_SENDER_ID, ruleModel.ruleSenderId)
+        values.put(RuleTable.RuleEntry.COLUMN_NAME_SIM_SLOT, ruleModel.simSlot)
 
         // Insert the new row, returning the primary key value of the new row
-
-        return db.insert(RuleTable.RuleEntry.TABLE_NAME, null, values);
+        return db!!.insert(RuleTable.RuleEntry.TABLE_NAME, null, values)
     }
 
-    public static long updateRule(RuleModel ruleModel) {
-        if (ruleModel == null) return 0;
+    fun updateRule(ruleModel: RuleModel?): Long {
+        if (ruleModel == null) return 0
 
         // Create a new map of values, where column names are the keys
-        ContentValues values = new ContentValues();
-        values.put(RuleTable.RuleEntry.COLUMN_NAME_FILED, ruleModel.getFiled());
-        values.put(RuleTable.RuleEntry.COLUMN_NAME_CHECK, ruleModel.getCheck());
-        values.put(RuleTable.RuleEntry.COLUMN_NAME_VALUE, ruleModel.getValue());
-        values.put(RuleTable.RuleEntry.COLUMN_NAME_SENDER_ID, ruleModel.getSenderId());
-        values.put(RuleTable.RuleEntry.COLUMN_NAME_SIM_SLOT, ruleModel.getSimSlot());
-
-        String selection = RuleTable.RuleEntry._ID + " = ? ";
-        String[] whereArgs = {String.valueOf(ruleModel.getId())};
-
-        return db.update(RuleTable.RuleEntry.TABLE_NAME, values, selection, whereArgs);
+        val values = ContentValues()
+        values.put(RuleTable.RuleEntry.COLUMN_NAME_FILED, ruleModel.filed)
+        values.put(RuleTable.RuleEntry.COLUMN_NAME_CHECK, ruleModel.check)
+        values.put(RuleTable.RuleEntry.COLUMN_NAME_VALUE, ruleModel.value)
+        values.put(RuleTable.RuleEntry.COLUMN_NAME_SENDER_ID, ruleModel.ruleSenderId)
+        values.put(RuleTable.RuleEntry.COLUMN_NAME_SIM_SLOT, ruleModel.simSlot)
+        val selection = RuleTable.RuleEntry._ID + " = ? "
+        val whereArgs = arrayOf(ruleModel.id.toString())
+        return db!!.update(RuleTable.RuleEntry.TABLE_NAME, values, selection, whereArgs).toLong()
     }
 
-    public static int delRule(Long id) {
+    fun delRule(id: Long?): Int {
         // Define 'where' part of query.
-        String selection = " 1 ";
+        var selection = " 1 "
         // Specify arguments in placeholder order.
-        List<String> selectionArgList = new ArrayList<>();
+        val selectionArgList: MutableList<String> = ArrayList()
         if (id != null) {
             // Define 'where' part of query.
-            selection += " and " + RuleTable.RuleEntry._ID + " = ? ";
+            selection += " and " + RuleTable.RuleEntry._ID + " = ? "
             // Specify arguments in placeholder order.
-            selectionArgList.add(String.valueOf(id));
-
+            selectionArgList.add(id.toString())
         }
-        String[] selectionArgs = selectionArgList.toArray(new String[selectionArgList.size()]);
+        val selectionArgs = selectionArgList.toTypedArray()
         // Issue SQL statement.
-        return db.delete(RuleTable.RuleEntry.TABLE_NAME, selection, selectionArgs);
-
+        return db!!.delete(RuleTable.RuleEntry.TABLE_NAME, selection, selectionArgs)
     }
 
-    public static List<RuleModel> getRule(Long id, String key) {
+    @JvmStatic
+    fun getRule(id: Long?, key: String?): List<RuleModel> {
         // Define a projection that specifies which columns from the database
         // you will actually use after this query.
-        String[] projection = {
-                BaseColumns._ID,
-                RuleTable.RuleEntry.COLUMN_NAME_FILED,
-                RuleTable.RuleEntry.COLUMN_NAME_CHECK,
-                RuleTable.RuleEntry.COLUMN_NAME_VALUE,
-                RuleTable.RuleEntry.COLUMN_NAME_SENDER_ID,
-                RuleTable.RuleEntry.COLUMN_NAME_TIME,
-                RuleTable.RuleEntry.COLUMN_NAME_SIM_SLOT,
-        };
+        val projection = arrayOf(
+            BaseColumns._ID,
+            RuleTable.RuleEntry.COLUMN_NAME_FILED,
+            RuleTable.RuleEntry.COLUMN_NAME_CHECK,
+            RuleTable.RuleEntry.COLUMN_NAME_VALUE,
+            RuleTable.RuleEntry.COLUMN_NAME_SENDER_ID,
+            RuleTable.RuleEntry.COLUMN_NAME_TIME,
+            RuleTable.RuleEntry.COLUMN_NAME_SIM_SLOT
+        )
         // Define 'where' part of query.
-        String selection = " 1 = 1 ";
+        var selection = " 1 = 1 "
         // Specify arguments in placeholder order.
-        List<String> selectionArgList = new ArrayList<>();
+        val selectionArgList: MutableList<String> = ArrayList()
         if (id != null) {
             // Define 'where' part of query.
-            selection += " and " + RuleTable.RuleEntry._ID + " = ? ";
+            selection += " and " + RuleTable.RuleEntry._ID + " = ? "
             // Specify arguments in placeholder order.
-            selectionArgList.add(String.valueOf(id));
+            selectionArgList.add(id.toString())
         }
-
         if (key != null) {
             // Define 'where' part of query.
-            if (key.equals("SIM1") || key.equals("SIM2")) {
-                selection += " and " + RuleTable.RuleEntry.COLUMN_NAME_SIM_SLOT + " IN ( 'ALL', ? ) ";
+            selection += if (key == "SIM1" || key == "SIM2") {
+                " and " + RuleTable.RuleEntry.COLUMN_NAME_SIM_SLOT + " IN ( 'ALL', ? ) "
             } else {
-                selection += " and " + RuleTable.RuleEntry.COLUMN_NAME_VALUE + " LIKE ? ";
+                " and " + RuleTable.RuleEntry.COLUMN_NAME_VALUE + " LIKE ? "
             }
             // Specify arguments in placeholder order.
-            selectionArgList.add(key);
+            selectionArgList.add(key)
         }
-        String[] selectionArgs = selectionArgList.toArray(new String[selectionArgList.size()]);
+        val selectionArgs = selectionArgList.toTypedArray()
 
         // How you want the results sorted in the resulting Cursor
-        String sortOrder =
-                RuleTable.RuleEntry._ID + " DESC";
-
-        Cursor cursor = db.query(
-                RuleTable.RuleEntry.TABLE_NAME,   // The table to query
-                projection,             // The array of columns to return (pass null to get all)
-                selection,              // The columns for the WHERE clause
-                selectionArgs,          // The values for the WHERE clause
-                null,                   // don't group the rows
-                null,                   // don't filter by row groups
-                sortOrder               // The sort order
-        );
-        List<RuleModel> tRules = new ArrayList<>();
+        val sortOrder = RuleTable.RuleEntry._ID + " DESC"
+        val cursor = db!!.query(
+            RuleTable.RuleEntry.TABLE_NAME,  // The table to query
+            projection,  // The array of columns to return (pass null to get all)
+            selection,  // The columns for the WHERE clause
+            selectionArgs,  // The values for the WHERE clause
+            null,  // don't group the rows
+            null,  // don't filter by row groups
+            sortOrder // The sort order
+        )
+        val tRules: MutableList<RuleModel> = ArrayList()
         while (cursor.moveToNext()) {
-
-            long itemId = cursor.getLong(
-                    cursor.getColumnIndexOrThrow(RuleTable.RuleEntry._ID));
-            String itemFiled = cursor.getString(
-                    cursor.getColumnIndexOrThrow(RuleTable.RuleEntry.COLUMN_NAME_FILED));
-            String itemCheck = cursor.getString(
-                    cursor.getColumnIndexOrThrow(RuleTable.RuleEntry.COLUMN_NAME_CHECK));
-            String itemValue = cursor.getString(
-                    cursor.getColumnIndexOrThrow(RuleTable.RuleEntry.COLUMN_NAME_VALUE));
-            long itemSenderId = cursor.getLong(
-                    cursor.getColumnIndexOrThrow(RuleTable.RuleEntry.COLUMN_NAME_SENDER_ID));
-            long itemTime = cursor.getLong(
-                    cursor.getColumnIndexOrThrow(RuleTable.RuleEntry.COLUMN_NAME_TIME));
-            String itemSimSlot = cursor.getString(
-                    cursor.getColumnIndexOrThrow(RuleTable.RuleEntry.COLUMN_NAME_SIM_SLOT));
-
-            Log.d(TAG, "getRule: itemId" + itemId);
-            RuleModel ruleModel = new RuleModel();
-            ruleModel.setId(itemId);
-            ruleModel.setFiled(itemFiled);
-            ruleModel.setCheck(itemCheck);
-            ruleModel.setValue(itemValue);
-            ruleModel.setSenderId(itemSenderId);
-            ruleModel.setTime(itemTime);
-            ruleModel.setSimSlot(itemSimSlot);
-
-            tRules.add(ruleModel);
+            val itemId = cursor.getLong(
+                cursor.getColumnIndexOrThrow(RuleTable.RuleEntry._ID)
+            )
+            val itemFiled = cursor.getString(
+                cursor.getColumnIndexOrThrow(RuleTable.RuleEntry.COLUMN_NAME_FILED)
+            )
+            val itemCheck = cursor.getString(
+                cursor.getColumnIndexOrThrow(RuleTable.RuleEntry.COLUMN_NAME_CHECK)
+            )
+            val itemValue = cursor.getString(
+                cursor.getColumnIndexOrThrow(RuleTable.RuleEntry.COLUMN_NAME_VALUE)
+            )
+            val itemSenderId = cursor.getLong(
+                cursor.getColumnIndexOrThrow(RuleTable.RuleEntry.COLUMN_NAME_SENDER_ID)
+            )
+            val itemTime = cursor.getLong(
+                cursor.getColumnIndexOrThrow(RuleTable.RuleEntry.COLUMN_NAME_TIME)
+            )
+            val itemSimSlot = cursor.getString(
+                cursor.getColumnIndexOrThrow(RuleTable.RuleEntry.COLUMN_NAME_SIM_SLOT)
+            )
+            Log.d(TAG, "getRule: itemId$itemId")
+            val ruleModel = RuleModel()
+            ruleModel.id = itemId
+            ruleModel.filed = itemFiled
+            ruleModel.check = itemCheck
+            ruleModel.value = itemValue
+            ruleModel.ruleSenderId = itemSenderId
+            ruleModel.time = itemTime
+            ruleModel.simSlot = itemSimSlot
+            tRules.add(ruleModel)
         }
-        cursor.close();
-        return tRules;
+        cursor.close()
+        return tRules
     }
-
 }

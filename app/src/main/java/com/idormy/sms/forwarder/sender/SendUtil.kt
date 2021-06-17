@@ -1,262 +1,306 @@
-package com.idormy.sms.forwarder.sender;
+package com.idormy.sms.forwarder.sender
 
-import android.content.Context;
-import android.os.Handler;
-import android.util.Log;
+import android.content.Context
+import android.os.Handler
+import android.util.Log
+import com.alibaba.fastjson.JSON
+import com.idormy.sms.forwarder.model.LogModel
+import com.idormy.sms.forwarder.model.RuleModel
+import com.idormy.sms.forwarder.model.SenderModel
+import com.idormy.sms.forwarder.model.vo.*
+import com.idormy.sms.forwarder.sender.SenderBarkMsg.sendMsg
+import com.idormy.sms.forwarder.sender.SenderDingDingMsg.sendMsg
+import com.idormy.sms.forwarder.sender.SenderMailMsg.sendEmail
+import com.idormy.sms.forwarder.utils.LogUtil
+import com.idormy.sms.forwarder.utils.LogUtil.addLog
+import com.idormy.sms.forwarder.utils.LogUtil.updateLog
+import com.idormy.sms.forwarder.utils.NetUtil.netWorkStatus
+import com.idormy.sms.forwarder.utils.RuleUtil
+import com.idormy.sms.forwarder.utils.RuleUtil.getRule
 
-import com.alibaba.fastjson.JSON;
-import com.idormy.sms.forwarder.model.LogModel;
-import com.idormy.sms.forwarder.model.RuleModel;
-import com.idormy.sms.forwarder.model.SenderModel;
-import com.idormy.sms.forwarder.model.vo.BarkSettingVo;
-import com.idormy.sms.forwarder.model.vo.DingDingSettingVo;
-import com.idormy.sms.forwarder.model.vo.EmailSettingVo;
-import com.idormy.sms.forwarder.model.vo.QYWXAppSettingVo;
-import com.idormy.sms.forwarder.model.vo.QYWXGroupRobotSettingVo;
-import com.idormy.sms.forwarder.model.vo.ServerChanSettingVo;
-import com.idormy.sms.forwarder.model.vo.SmsSettingVo;
-import com.idormy.sms.forwarder.model.vo.SmsVo;
-import com.idormy.sms.forwarder.model.vo.TelegramSettingVo;
-import com.idormy.sms.forwarder.model.vo.WebNotifySettingVo;
-import com.idormy.sms.forwarder.utils.LogUtil;
-import com.idormy.sms.forwarder.utils.NetUtil;
-import com.idormy.sms.forwarder.utils.RuleUtil;
-
-import java.util.List;
-
-import static com.idormy.sms.forwarder.model.SenderModel.TYPE_BARK;
-import static com.idormy.sms.forwarder.model.SenderModel.TYPE_DINGDING;
-import static com.idormy.sms.forwarder.model.SenderModel.TYPE_EMAIL;
-import static com.idormy.sms.forwarder.model.SenderModel.TYPE_QYWX_APP;
-import static com.idormy.sms.forwarder.model.SenderModel.TYPE_QYWX_GROUP_ROBOT;
-import static com.idormy.sms.forwarder.model.SenderModel.TYPE_SERVER_CHAN;
-import static com.idormy.sms.forwarder.model.SenderModel.TYPE_SMS;
-import static com.idormy.sms.forwarder.model.SenderModel.TYPE_TELEGRAM;
-import static com.idormy.sms.forwarder.model.SenderModel.TYPE_WEB_NOTIFY;
-
-public class SendUtil {
-    private static String TAG = "SendUtil";
-
-    public static void send_msg_list(Context context, List<SmsVo> smsVoList, int simId) {
-        Log.i(TAG, "send_msg_list size: " + smsVoList.size());
-        for (SmsVo smsVo : smsVoList) {
-            SendUtil.send_msg(context, smsVo, simId);
+object SendUtil {
+    private const val TAG = "SendUtil"
+    fun sendMsgList(smsVoList: List<SmsVo>, simId: Int) {
+        Log.i(TAG, "send_msg_list size: " + smsVoList.size)
+        for (smsVo in smsVoList) {
+            sendMsg1(smsVo, simId)
         }
     }
 
-    public static void send_msg(Context context, SmsVo smsVo, int simId) {
-        Log.i(TAG, "send_msg smsVo:" + smsVo);
-        RuleUtil.init(context);
-        LogUtil.init(context);
-
-        String key = "SIM" + simId;
-        List<RuleModel> rulelist = RuleUtil.getRule(null, key);
-        if (!rulelist.isEmpty()) {
-            SenderUtil.init(context);
-            for (RuleModel ruleModel : rulelist) {
+    fun sendMsg1(smsVo: SmsVo, simId: Int) {
+        Log.i(TAG, "send_msg smsVo:$smsVo")
+        RuleUtil.init()
+        LogUtil.init()
+        val key = "SIM$simId"
+        val ruleList = getRule(null, key)
+        if (ruleList.isNotEmpty()) {
+            SenderUtil.init()
+            for (ruleModel in ruleList) {
                 //规则匹配发现需要发送
                 try {
                     if (ruleModel.checkMsg(smsVo)) {
-                        List<SenderModel> senderModels = SenderUtil.getSender(ruleModel.getSenderId(), null);
-                        for (SenderModel senderModel : senderModels
-                        ) {
-                            long logId = LogUtil.addLog(new LogModel(smsVo.getMobile(), smsVo.getContent(), smsVo.getSimInfo(), ruleModel.getId()));
-                            SendUtil.senderSendMsgNoHandError(smsVo, senderModel, logId);
+                        val senderModels = SenderUtil.getSender(ruleModel.ruleSenderId, null)
+                        for (senderModel in senderModels) {
+                            val logId = addLog(
+                                LogModel(
+                                    smsVo.mobile!!,
+                                    smsVo.content!!,
+                                    smsVo.simInfo,
+                                    ruleModel.id!!
+                                )
+                            )
+                            senderSendMsgNoHandError(smsVo, senderModel, logId)
                         }
                     }
-                } catch (Exception e) {
-                    Log.e(TAG, "send_msg: fail checkMsg:", e);
+                } catch (e: Exception) {
+                    Log.e(TAG, "send_msg: fail checkMsg:", e)
                 }
             }
         }
     }
 
-    public static void sendMsgByRuleModelSenderId(final Handler handError, RuleModel ruleModel, SmsVo smsVo, Long senderId) throws Exception {
+    @Throws(Exception::class)
+    fun sendMsgByRuleModelSenderId(
+        handError: Handler?,
+        ruleModel: RuleModel,
+        smsVo: SmsVo,
+        senderId: Long?
+    ) {
         if (senderId == null) {
-            throw new Exception("先新建并选择发送方");
+            throw Exception("先新建并选择发送方")
         }
-
-        String testSim = smsVo.getSimInfo().substring(0, 4);
-        String ruleSim = ruleModel.getSimSlot();
-
-        if (!ruleSim.equals("ALL") && !ruleSim.equals(testSim)) {
-            throw new Exception("接收卡槽未匹配中规则");
+        val testSim = smsVo.simInfo.substring(0, 4)
+        val ruleSim = ruleModel.simSlot
+        if (ruleSim != "ALL" && ruleSim != testSim) {
+            throw Exception("接收卡槽未匹配中规则")
         }
-
         if (!ruleModel.checkMsg(smsVo)) {
-            throw new Exception("短信未匹配中规则");
+            throw Exception("短信未匹配中规则")
         }
-
-        List<SenderModel> senderModels = SenderUtil.getSender(senderId, null);
+        val senderModels = SenderUtil.getSender(senderId, null)
         if (senderModels.isEmpty()) {
-            throw new Exception("未找到发送方");
+            throw Exception("未找到发送方")
         }
-
-        for (SenderModel senderModel : senderModels
-        ) {
-            SendUtil.senderSendMsg(handError, smsVo, senderModel, 0);
+        for (senderModel in senderModels) {
+            senderSendMsg(handError, smsVo, senderModel, 0)
         }
     }
 
-    public static void senderSendMsgNoHandError(SmsVo smsVo, SenderModel senderModel, long logId) {
-        SendUtil.senderSendMsg(null, smsVo, senderModel, logId);
+    fun senderSendMsgNoHandError(smsVo: SmsVo, senderModel: SenderModel?, logId: Long) {
+        senderSendMsg(null, smsVo, senderModel, logId)
     }
 
-    public static void senderSendMsg(Handler handError, SmsVo smsVo, SenderModel senderModel, long logId) {
-
-        Log.i(TAG, "senderSendMsg smsVo:" + smsVo + "senderModel:" + senderModel);
-        switch (senderModel.getType()) {
-            case TYPE_DINGDING:
-                //try phrase json setting
-                if (senderModel.getJsonSetting() != null) {
-                    DingDingSettingVo dingDingSettingVo = JSON.parseObject(senderModel.getJsonSetting(), DingDingSettingVo.class);
+    fun senderSendMsg(handError: Handler?, smsVo: SmsVo, senderModel: SenderModel?, logId: Long) {
+        Log.i(TAG, "senderSendMsg smsVo:" + smsVo + "senderModel:" + senderModel)
+        when (senderModel!!.type) {
+            SenderModel.TYPE_DINGDING ->                 //try phrase json setting
+                if (senderModel.jsonSetting != null) {
+                    val dingDingSettingVo = JSON.parseObject(
+                        senderModel.jsonSetting, DingDingSettingVo::class.java
+                    )
                     if (dingDingSettingVo != null) {
                         try {
-                            SenderDingdingMsg.sendMsg(logId, handError, dingDingSettingVo.getToken(), dingDingSettingVo.getSecret(), dingDingSettingVo.getAtMobils(), dingDingSettingVo.getAtAll(), smsVo.getSmsVoForSend());
-                        } catch (Exception e) {
-                            LogUtil.updateLog(logId, 0, e.getMessage());
-                            Log.e(TAG, "senderSendMsg: dingding error " + e.getMessage());
+                            sendMsg(
+                                logId,
+                                handError,
+                                dingDingSettingVo.token,
+                                dingDingSettingVo.secret,
+                                dingDingSettingVo.atMobils,
+                                dingDingSettingVo.atAll,
+                                smsVo.smsVoForSend
+                            )
+                        } catch (e: Exception) {
+                            updateLog(logId, 0, e.message)
+                            Log.e(TAG, "senderSendMsg: dingding error " + e.message)
                         }
                     }
                 }
-                break;
-
-            case TYPE_EMAIL:
-                //try phrase json setting
-                if (senderModel.getJsonSetting() != null) {
-                    EmailSettingVo emailSettingVo = JSON.parseObject(senderModel.getJsonSetting(), EmailSettingVo.class);
+            SenderModel.TYPE_EMAIL ->                 //try phrase json setting
+                if (senderModel.jsonSetting != null) {
+                    val emailSettingVo = JSON.parseObject(
+                        senderModel.jsonSetting, EmailSettingVo::class.java
+                    )
                     if (emailSettingVo != null) {
                         try {
-                            SenderMailMsg.sendEmail(logId, handError, emailSettingVo.getHost(), emailSettingVo.getPort(), emailSettingVo.getSsl(), emailSettingVo.getFromEmail(), emailSettingVo.getNickname(),
-                                    emailSettingVo.getPwd(), emailSettingVo.getToEmail(), smsVo.getMobile(), smsVo.getSmsVoForSend());
-                        } catch (Exception e) {
-                            LogUtil.updateLog(logId, 0, e.getMessage());
-                            Log.e(TAG, "senderSendMsg: SenderMailMsg error " + e.getMessage());
+                            sendEmail(
+                                logId,
+                                handError,
+                                emailSettingVo.host!!,
+                                emailSettingVo.port!!,
+                                emailSettingVo.ssl,
+                                emailSettingVo.fromEmail!!,
+                                emailSettingVo.nickname!!,
+                                emailSettingVo.pwd!!,
+                                emailSettingVo.toEmail!!,
+                                smsVo.mobile,
+                                smsVo.smsVoForSend
+                            )
+                        } catch (e: Exception) {
+                            updateLog(logId, 0, e.message)
+                            Log.e(TAG, "senderSendMsg: SenderMailMsg error " + e.message)
                         }
                     }
                 }
-                break;
-
-            case TYPE_BARK:
-                //try phrase json setting
-                if (senderModel.getJsonSetting() != null) {
-                    BarkSettingVo barkSettingVo = JSON.parseObject(senderModel.getJsonSetting(), BarkSettingVo.class);
+            SenderModel.TYPE_BARK ->                 //try phrase json setting
+                if (senderModel.jsonSetting != null) {
+                    val barkSettingVo =
+                        JSON.parseObject(senderModel.jsonSetting, BarkSettingVo::class.java)
                     if (barkSettingVo != null) {
                         try {
-                            SenderBarkMsg.sendMsg(logId, handError, barkSettingVo.getServer(), smsVo.getMobile(), smsVo.getSmsVoForSend());
-                        } catch (Exception e) {
-                            LogUtil.updateLog(logId, 0, e.getMessage());
-                            Log.e(TAG, "senderSendMsg: SenderBarkMsg error " + e.getMessage());
+                            sendMsg(
+                                logId,
+                                handError,
+                                barkSettingVo.server,
+                                smsVo.mobile!!,
+                                smsVo.smsVoForSend
+                            )
+                        } catch (e: Exception) {
+                            updateLog(logId, 0, e.message)
+                            Log.e(TAG, "senderSendMsg: SenderBarkMsg error " + e.message)
                         }
                     }
                 }
-                break;
-
-            case TYPE_WEB_NOTIFY:
-                //try phrase json setting
-                if (senderModel.getJsonSetting() != null) {
-                    WebNotifySettingVo webNotifySettingVo = JSON.parseObject(senderModel.getJsonSetting(), WebNotifySettingVo.class);
+            SenderModel.TYPE_WEB_NOTIFY ->                 //try phrase json setting
+                if (senderModel.jsonSetting != null) {
+                    val webNotifySettingVo = JSON.parseObject(
+                        senderModel.jsonSetting, WebNotifySettingVo::class.java
+                    )
                     if (webNotifySettingVo != null) {
                         try {
-                            SenderWebNotifyMsg.sendMsg(logId, handError, webNotifySettingVo.getWebServer(), webNotifySettingVo.getSecret(), webNotifySettingVo.getMethod(), smsVo.getMobile(), smsVo.getSmsVoForSend());
-                        } catch (Exception e) {
-                            LogUtil.updateLog(logId, 0, e.getMessage());
-                            Log.e(TAG, "senderSendMsg: SenderWebNotifyMsg error " + e.getMessage());
+                            SenderWebNotifyMsg.sendMsg(
+                                logId,
+                                handError,
+                                webNotifySettingVo.webServer,
+                                webNotifySettingVo.secret,
+                                webNotifySettingVo.method,
+                                smsVo.mobile,
+                                smsVo.smsVoForSend
+                            )
+                        } catch (e: Exception) {
+                            updateLog(logId, 0, e.message)
+                            Log.e(TAG, "senderSendMsg: SenderWebNotifyMsg error " + e.message)
                         }
                     }
                 }
-                break;
-
-            case TYPE_QYWX_GROUP_ROBOT:
-                //try phrase json setting
-                if (senderModel.getJsonSetting() != null) {
-                    QYWXGroupRobotSettingVo qywxGroupRobotSettingVo = JSON.parseObject(senderModel.getJsonSetting(), QYWXGroupRobotSettingVo.class);
+            SenderModel.TYPE_QYWX_GROUP_ROBOT ->                 //try phrase json setting
+                if (senderModel.jsonSetting != null) {
+                    val qywxGroupRobotSettingVo = JSON.parseObject(
+                        senderModel.jsonSetting, QYWXGroupRobotSettingVo::class.java
+                    )
                     if (qywxGroupRobotSettingVo != null) {
                         try {
-                            SenderQyWxGroupRobotMsg.sendMsg(logId, handError, qywxGroupRobotSettingVo.getWebHook(), smsVo.getMobile(), smsVo.getSmsVoForSend());
-                        } catch (Exception e) {
-                            LogUtil.updateLog(logId, 0, e.getMessage());
-                            Log.e(TAG, "senderSendMsg: SenderQyWxGroupRobotMsg error " + e.getMessage());
+                            SenderQyWxGroupRobotMsg.sendMsg(
+                                logId,
+                                handError,
+                                qywxGroupRobotSettingVo.webHook,
+                                smsVo.mobile,
+                                smsVo.smsVoForSend
+                            )
+                        } catch (e: Exception) {
+                            updateLog(logId, 0, e.message)
+                            Log.e(TAG, "senderSendMsg: SenderQyWxGroupRobotMsg error " + e.message)
                         }
                     }
                 }
-                break;
-
-            case TYPE_QYWX_APP:
-                //try phrase json setting
-                if (senderModel.getJsonSetting() != null) {
-                    QYWXAppSettingVo qYWXAppSettingVo = JSON.parseObject(senderModel.getJsonSetting(), QYWXAppSettingVo.class);
+            SenderModel.TYPE_QYWX_APP ->                 //try phrase json setting
+                if (senderModel.jsonSetting != null) {
+                    val qYWXAppSettingVo = JSON.parseObject(
+                        senderModel.jsonSetting, QYWXAppSettingVo::class.java
+                    )
                     if (qYWXAppSettingVo != null) {
                         try {
-                            SenderQyWxAppMsg.sendMsg(logId, handError, qYWXAppSettingVo.getCorpID(), qYWXAppSettingVo.getAgentID(), qYWXAppSettingVo.getSecret(), qYWXAppSettingVo.getToUser(), smsVo.getSmsVoForSend(), false);
-                        } catch (Exception e) {
-                            LogUtil.updateLog(logId, 0, e.getMessage());
-                            Log.e(TAG, "senderSendMsg: qywx_app error " + e.getMessage());
+                            SenderQyWxAppMsg.sendMsg(
+                                logId,
+                                handError,
+                                qYWXAppSettingVo.corpID,
+                                qYWXAppSettingVo.agentID,
+                                qYWXAppSettingVo.secret,
+                                qYWXAppSettingVo.toUser,
+                                smsVo.smsVoForSend,
+                                false
+                            )
+                        } catch (e: Exception) {
+                            updateLog(logId, 0, e.message)
+                            Log.e(TAG, "senderSendMsg: qywx_app error " + e.message)
                         }
                     }
                 }
-                break;
-
-            case TYPE_SERVER_CHAN:
-                //try phrase json setting
-                if (senderModel.getJsonSetting() != null) {
-                    ServerChanSettingVo serverChanSettingVo = JSON.parseObject(senderModel.getJsonSetting(), ServerChanSettingVo.class);
+            SenderModel.TYPE_SERVER_CHAN ->                 //try phrase json setting
+                if (senderModel.jsonSetting != null) {
+                    val serverChanSettingVo = JSON.parseObject(
+                        senderModel.jsonSetting, ServerChanSettingVo::class.java
+                    )
                     if (serverChanSettingVo != null) {
                         try {
-                            SenderServerChanMsg.sendMsg(logId, handError, serverChanSettingVo.getSendKey(), smsVo.getMobile(), smsVo.getSmsVoForSend());
-                        } catch (Exception e) {
-                            LogUtil.updateLog(logId, 0, e.getMessage());
-                            Log.e(TAG, "senderSendMsg: SenderServerChanMsg error " + e.getMessage());
+                            SenderServerChanMsg.sendMsg(
+                                logId,
+                                handError,
+                                serverChanSettingVo.sendKey,
+                                smsVo.mobile,
+                                smsVo.smsVoForSend
+                            )
+                        } catch (e: Exception) {
+                            updateLog(logId, 0, e.message)
+                            Log.e(TAG, "senderSendMsg: SenderServerChanMsg error " + e.message)
                         }
                     }
                 }
-                break;
-
-            case TYPE_TELEGRAM:
-                //try phrase json setting
-                if (senderModel.getJsonSetting() != null) {
-                    TelegramSettingVo telegramSettingVo = JSON.parseObject(senderModel.getJsonSetting(), TelegramSettingVo.class);
+            SenderModel.TYPE_TELEGRAM ->                 //try phrase json setting
+                if (senderModel.jsonSetting != null) {
+                    val telegramSettingVo = JSON.parseObject(
+                        senderModel.jsonSetting, TelegramSettingVo::class.java
+                    )
                     if (telegramSettingVo != null) {
                         try {
-                            SenderTelegramMsg.sendMsg(logId, handError, telegramSettingVo.getApiToken(), telegramSettingVo.getChatId(), smsVo.getMobile(), smsVo.getSmsVoForSend());
-                        } catch (Exception e) {
-                            LogUtil.updateLog(logId, 0, e.getMessage());
-                            Log.e(TAG, "senderSendMsg: SenderTelegramMsg error " + e.getMessage());
+                            SenderTelegramMsg.sendMsg(
+                                logId,
+                                handError,
+                                telegramSettingVo.apiToken,
+                                telegramSettingVo.chatId,
+                                smsVo.mobile,
+                                smsVo.smsVoForSend
+                            )
+                        } catch (e: Exception) {
+                            updateLog(logId, 0, e.message)
+                            Log.e(TAG, "senderSendMsg: SenderTelegramMsg error " + e.message)
                         }
                     }
                 }
-                break;
-
-            case TYPE_SMS:
-                //try phrase json setting
-                if (senderModel.getJsonSetting() != null) {
-                    SmsSettingVo smsSettingVo = JSON.parseObject(senderModel.getJsonSetting(), SmsSettingVo.class);
+            SenderModel.TYPE_SMS ->                 //try phrase json setting
+                if (senderModel.jsonSetting != null) {
+                    val smsSettingVo =
+                        JSON.parseObject(senderModel.jsonSetting, SmsSettingVo::class.java)
                     if (smsSettingVo != null) {
                         //仅当无网络时启用
-                        if (true == smsSettingVo.getOnlyNoNetwork() && 0 != NetUtil.getNetWorkStatus()) {
-                            String msg = "仅当无网络时启用，当前网络状态：" + NetUtil.getNetWorkStatus();
-                            LogUtil.updateLog(logId, 0, msg);
-                            Log.d(TAG, msg);
-                            return;
+                        if (true == smsSettingVo.onlyNoNetwork && 0 != netWorkStatus) {
+                            val msg = "仅当无网络时启用，当前网络状态：$netWorkStatus"
+                            updateLog(logId, 0, msg)
+                            Log.d(TAG, msg)
+                            return
                         }
                         try {
-                            int simSlot = smsSettingVo.getSimSlot() - 1;
+                            var simSlot = smsSettingVo.simSlot - 1
                             if (simSlot < 0) { //原进原出
-                                simSlot = Integer.parseInt(smsVo.getSimInfo().substring(3, 4)) - 1;
-                                Log.d(TAG, "simSlot = " + simSlot);
+                                simSlot = smsVo.simInfo.substring(3, 4).toInt() - 1
+                                Log.d(TAG, "simSlot = $simSlot")
                             }
-                            SenderSmsMsg.sendMsg(logId, handError, simSlot, smsSettingVo.getMobiles(), smsSettingVo.getOnlyNoNetwork(), smsVo.getMobile(), smsVo.getSmsVoForSend());
-                        } catch (Exception e) {
-                            LogUtil.updateLog(logId, 0, e.getMessage());
-                            Log.e(TAG, "senderSendMsg: SenderSmsMsg error " + e.getMessage());
+                            SenderSmsMsg.sendMsg(
+                                logId,
+                                handError,
+                                simSlot,
+                                smsSettingVo.mobiles,
+                                smsSettingVo.onlyNoNetwork,
+                                smsVo.mobile,
+                                smsVo.smsVoForSend
+                            )
+                        } catch (e: Exception) {
+                            updateLog(logId, 0, e.message)
+                            Log.e(TAG, "senderSendMsg: SenderSmsMsg error " + e.message)
                         }
                     }
                 }
-                break;
-
-            default:
-                break;
+            else -> {
+            }
         }
     }
-
 }

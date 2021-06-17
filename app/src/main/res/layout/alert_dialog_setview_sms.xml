@@ -103,7 +103,7 @@
                 android:layout_height="wrap_content"
                 android:text="仅当无网络时启用" />
 
-            <Switch
+            <androidx.appcompat.widget.SwitchCompat
                 android:id="@+id/switchSmsOnlyNoNetwork"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
