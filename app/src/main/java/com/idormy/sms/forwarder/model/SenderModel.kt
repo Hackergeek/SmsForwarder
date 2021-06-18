@@ -40,12 +40,16 @@ class SenderModel {
         }
 
     fun getSmsSimSlotId(id: Int): Int {
-        return if (id == R.id.btnSmsSimSlot1) {
-            1
-        } else if (id == R.id.btnSmsSimSlot2) {
-            2
-        } else {
-            0
+        return when (id) {
+            R.id.btnSmsSimSlot1 -> {
+                1
+            }
+            R.id.btnSmsSimSlot2 -> {
+                2
+            }
+            else -> {
+                0
+            }
         }
     }
 

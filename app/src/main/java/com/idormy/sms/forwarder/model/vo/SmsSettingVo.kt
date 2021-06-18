@@ -16,11 +16,15 @@ class SmsSettingVo : Serializable {
     }
 
     val smsSimSlotCheckId: Int
-        get() = if (simSlot == 1) {
-            R.id.btnSmsSimSlot1
-        } else if (simSlot == 2) {
-            R.id.btnSmsSimSlot2
-        } else {
-            R.id.btnSmsSimSlotOrg
+        get() = when (simSlot) {
+            1 -> {
+                R.id.btnSmsSimSlot1
+            }
+            2 -> {
+                R.id.btnSmsSimSlot2
+            }
+            else -> {
+                R.id.btnSmsSimSlotOrg
+            }
         }
 }

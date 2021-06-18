@@ -10,6 +10,4 @@ data class EmailSettingVo(
     var nickname: String? = "",
     var pwd: String? = "",
     var toEmail: String? = ""
-) : Serializable {
-
-}
+) : Serializable

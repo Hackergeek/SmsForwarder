@@ -7,7 +7,7 @@ class RuleTable  // To prevent someone from accidentally instantiating the contr
 private constructor() {
     /* Inner class that defines the table contents */
     object RuleEntry : BaseColumns {
-        const val _ID = BaseColumns._ID
+        const val ID = BaseColumns._ID
         const val TABLE_NAME = "rule"
         const val COLUMN_NAME_FILED = "filed"
         const val COLUMN_NAME_CHECK = "tcheck"

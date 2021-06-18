@@ -5,6 +5,7 @@ import android.os.Build
 import android.preference.PreferenceManager
 import android.util.Log
 import com.idormy.sms.forwarder.MyApplication
+import com.idormy.sms.forwarder.model.vo.SmsVo
 import com.idormy.sms.forwarder.utils.SimUtil.getSimInfo
 
 object SettingUtil {
@@ -77,7 +78,7 @@ object SettingUtil {
     val smsTemplate: String?
         get() = sp_setting.getString(
             Define.SP_MSG_KEY_STRING_SMS_TEMPLATE,
-            "{{来源号码}}\n{{短信内容}}\n{{卡槽信息}}\n{{接收时间}}\n{{设备名称}}"
+            SmsVo.SMS_DEFAULT_TEMPLATE
         )
 
     fun setSmsTemplate(textSmsTemplate: String) {

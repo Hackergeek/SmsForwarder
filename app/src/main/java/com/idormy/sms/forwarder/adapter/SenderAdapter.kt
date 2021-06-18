@@ -10,7 +10,7 @@ import android.widget.TextView
 import com.idormy.sms.forwarder.R
 import com.idormy.sms.forwarder.model.SenderModel
 
-class SenderAdapter     // 适配器的构造函数，把要适配的数据传入这里
+class SenderAdapter
     (context: Context?, private val resourceId: Int, private var list: MutableList<SenderModel>) :
     ArrayAdapter<SenderModel>(
         context!!, resourceId, list
@@ -61,45 +61,23 @@ class SenderAdapter     // 适配器的构造函数，把要适配的数据传�
     }
 
     fun add(senderModel: SenderModel) {
-        if (list != null) {
-            list!!.add(senderModel)
-            notifyDataSetChanged()
-        }
+        list.add(senderModel)
+        notifyDataSetChanged()
     }
 
     fun del(position: Int) {
-        if (list != null) {
-            list!!.removeAt(position)
-            notifyDataSetChanged()
-        }
+        list.removeAt(position)
+        notifyDataSetChanged()
     }
 
     fun update(senderModel: SenderModel, position: Int) {
-        if (list != null) {
-            list!![position] = senderModel
-            notifyDataSetChanged()
-        }
-    }
-
-    fun add(senderModels: MutableList<SenderModel>) {
-        if (list != null) {
-            list = senderModels
-            notifyDataSetChanged()
-        }
-    }
-
-    fun del(senderModels: MutableList<SenderModel>) {
-        if (list != null) {
-            list = senderModels
-            notifyDataSetChanged()
-        }
+        list[position] = senderModel
+        notifyDataSetChanged()
     }
 
     fun update(senderModels: MutableList<SenderModel>) {
-        if (list != null) {
-            list = senderModels
-            notifyDataSetChanged()
-        }
+        list = senderModels
+        notifyDataSetChanged()
     }
 
     // 定义一个内部类，用于对控件的实例进行缓存

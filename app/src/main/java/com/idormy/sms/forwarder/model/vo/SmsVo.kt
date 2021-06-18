@@ -32,12 +32,15 @@ class SmsVo : Serializable {
                 smsTemplate = smsTemplate.replace("{{卡槽信息}}\n", "").replace("{{卡槽信息}}", "")
             }
             if (!switchSmsTemplate) {
-                smsTemplate = "{{来源号码}}\n{{短信内容}}\n{{卡槽信息}}\n{{接收时间}}\n{{设备名称}}"
+                smsTemplate = SMS_DEFAULT_TEMPLATE
             }
             return smsTemplate.replace("{{来源号码}}", mobile!!)
                 .replace("{{短信内容}}", content!!)
                 .replace("{{卡槽信息}}", simInfo)
-                .replace("{{接收时间}}", SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(date))
+                .replace(
+                    "{{接收时间}}",
+                    SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(date)
+                )
                 .replace("{{设备名称}}", deviceMark)
                 .trim { it <= ' ' }
         }
@@ -49,5 +52,9 @@ class SmsVo : Serializable {
                 ", date=" + date +
                 ", simInfo=" + simInfo +
                 '}'
+    }
+
+    companion object {
+        const val SMS_DEFAULT_TEMPLATE = "{{来源号码}}\n{{短信内容}}\n{{卡槽信息}}\n{{接收时间}}\n{{设备名称}}"
     }
 }

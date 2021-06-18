@@ -44,7 +44,7 @@ object LogUtil {
         val selectionArgList: MutableList<String> = ArrayList()
         if (id != null) {
             // Define 'where' part of query.
-            selection += " and " + LogTable.LogEntry._ID + " = ? "
+            selection += " and " + LogTable.LogEntry.ID + " = ? "
             // Specify arguments in placeholder order.
             selectionArgList.add(id.toString())
         }
@@ -64,7 +64,7 @@ object LogUtil {
     @JvmStatic
     fun updateLog(id: Long?, forward_status: Int, forward_response: String?): Int {
         if (id == null || id <= 0) return 0
-        val selection = LogTable.LogEntry._ID + " = ? "
+        val selection = LogTable.LogEntry.ID + " = ? "
         val selectionArgList: MutableList<String> = ArrayList()
         selectionArgList.add(id.toString())
         val values = ContentValues()
@@ -98,7 +98,7 @@ object LogUtil {
         val selectionArgList: MutableList<String> = ArrayList()
         if (id != null) {
             // Define 'where' part of query.
-            selection += " and " + LogTable.LogEntry.TABLE_NAME + "." + LogTable.LogEntry._ID + " = ? "
+            selection += " and " + LogTable.LogEntry.TABLE_NAME + "." + LogTable.LogEntry.ID + " = ? "
             // Specify arguments in placeholder order.
             selectionArgList.add(id.toString())
         }
@@ -113,11 +113,11 @@ object LogUtil {
         val selectionArgs = selectionArgList.toTypedArray()
 
         // How you want the results sorted in the resulting Cursor
-        val sortOrder = LogTable.LogEntry.TABLE_NAME + "." + LogTable.LogEntry._ID + " DESC"
+        val sortOrder = LogTable.LogEntry.TABLE_NAME + "." + LogTable.LogEntry.ID + " DESC"
         val cursor = db!!.query( // The table to query
             LogTable.LogEntry.TABLE_NAME
-                    + " LEFT JOIN " + RuleTable.RuleEntry.TABLE_NAME + " ON " + LogTable.LogEntry.TABLE_NAME + "." + LogTable.LogEntry.COLUMN_NAME_RULE_ID + "=" + RuleTable.RuleEntry.TABLE_NAME + "." + RuleTable.RuleEntry._ID
-                    + " LEFT JOIN " + SenderTable.SenderEntry.TABLE_NAME + " ON " + SenderTable.SenderEntry.TABLE_NAME + "." + SenderTable.SenderEntry._ID + "=" + RuleTable.RuleEntry.TABLE_NAME + "." + RuleTable.RuleEntry.COLUMN_NAME_SENDER_ID,
+                    + " LEFT JOIN " + RuleTable.RuleEntry.TABLE_NAME + " ON " + LogTable.LogEntry.TABLE_NAME + "." + LogTable.LogEntry.COLUMN_NAME_RULE_ID + "=" + RuleTable.RuleEntry.TABLE_NAME + "." + RuleTable.RuleEntry.ID
+                    + " LEFT JOIN " + SenderTable.SenderEntry.TABLE_NAME + " ON " + SenderTable.SenderEntry.TABLE_NAME + "." + SenderTable.SenderEntry.ID + "=" + RuleTable.RuleEntry.TABLE_NAME + "." + RuleTable.RuleEntry.COLUMN_NAME_SENDER_ID,
             projection,  // The array of columns to return (pass null to get all)
             selection,  // The columns for the WHERE clause
             selectionArgs,  // The values for the WHERE clause

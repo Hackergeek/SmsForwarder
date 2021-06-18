@@ -24,7 +24,7 @@ object RuleUtil {
 
         // Create a new map of values, where column names are the keys
         val values = ContentValues()
-        values.put(RuleTable.RuleEntry.COLUMN_NAME_FILED, ruleModel.filed)
+        values.put(RuleTable.RuleEntry.COLUMN_NAME_FILED, ruleModel.field)
         values.put(RuleTable.RuleEntry.COLUMN_NAME_CHECK, ruleModel.check)
         values.put(RuleTable.RuleEntry.COLUMN_NAME_VALUE, ruleModel.value)
         values.put(RuleTable.RuleEntry.COLUMN_NAME_SENDER_ID, ruleModel.ruleSenderId)
@@ -39,12 +39,12 @@ object RuleUtil {
 
         // Create a new map of values, where column names are the keys
         val values = ContentValues()
-        values.put(RuleTable.RuleEntry.COLUMN_NAME_FILED, ruleModel.filed)
+        values.put(RuleTable.RuleEntry.COLUMN_NAME_FILED, ruleModel.field)
         values.put(RuleTable.RuleEntry.COLUMN_NAME_CHECK, ruleModel.check)
         values.put(RuleTable.RuleEntry.COLUMN_NAME_VALUE, ruleModel.value)
         values.put(RuleTable.RuleEntry.COLUMN_NAME_SENDER_ID, ruleModel.ruleSenderId)
         values.put(RuleTable.RuleEntry.COLUMN_NAME_SIM_SLOT, ruleModel.simSlot)
-        val selection = RuleTable.RuleEntry._ID + " = ? "
+        val selection = RuleTable.RuleEntry.ID + " = ? "
         val whereArgs = arrayOf(ruleModel.id.toString())
         return db!!.update(RuleTable.RuleEntry.TABLE_NAME, values, selection, whereArgs).toLong()
     }
@@ -56,7 +56,7 @@ object RuleUtil {
         val selectionArgList: MutableList<String> = ArrayList()
         if (id != null) {
             // Define 'where' part of query.
-            selection += " and " + RuleTable.RuleEntry._ID + " = ? "
+            selection += " and " + RuleTable.RuleEntry.ID + " = ? "
             // Specify arguments in placeholder order.
             selectionArgList.add(id.toString())
         }
@@ -84,7 +84,7 @@ object RuleUtil {
         val selectionArgList: MutableList<String> = ArrayList()
         if (id != null) {
             // Define 'where' part of query.
-            selection += " and " + RuleTable.RuleEntry._ID + " = ? "
+            selection += " and " + RuleTable.RuleEntry.ID + " = ? "
             // Specify arguments in placeholder order.
             selectionArgList.add(id.toString())
         }
@@ -101,7 +101,7 @@ object RuleUtil {
         val selectionArgs = selectionArgList.toTypedArray()
 
         // How you want the results sorted in the resulting Cursor
-        val sortOrder = RuleTable.RuleEntry._ID + " DESC"
+        val sortOrder = RuleTable.RuleEntry.ID + " DESC"
         val cursor = db!!.query(
             RuleTable.RuleEntry.TABLE_NAME,  // The table to query
             projection,  // The array of columns to return (pass null to get all)
@@ -114,7 +114,7 @@ object RuleUtil {
         val tRules: MutableList<RuleModel> = ArrayList()
         while (cursor.moveToNext()) {
             val itemId = cursor.getLong(
-                cursor.getColumnIndexOrThrow(RuleTable.RuleEntry._ID)
+                cursor.getColumnIndexOrThrow(RuleTable.RuleEntry.ID)
             )
             val itemFiled = cursor.getString(
                 cursor.getColumnIndexOrThrow(RuleTable.RuleEntry.COLUMN_NAME_FILED)
@@ -137,7 +137,7 @@ object RuleUtil {
             Log.d(TAG, "getRule: itemId$itemId")
             val ruleModel = RuleModel()
             ruleModel.id = itemId
-            ruleModel.filed = itemFiled
+            ruleModel.field = itemFiled
             ruleModel.check = itemCheck
             ruleModel.value = itemValue
             ruleModel.ruleSenderId = itemSenderId

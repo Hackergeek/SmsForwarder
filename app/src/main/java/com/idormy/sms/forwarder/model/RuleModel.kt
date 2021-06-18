@@ -10,28 +10,29 @@ import java.util.regex.PatternSyntaxException
 
 class RuleModel {
     companion object {
-        const val FILED_TRANSPOND_ALL = "transpond_all"
+        const val TAG = "RuleModel"
+        const val FILED_FORWARD_ALL = "forward_all"
         const val FILED_PHONE_NUM = "phone_num"
         const val FILED_MSG_CONTENT = "msg_content"
         const val FILED_MULTI_MATCH = "multi_match"
-        val FILED_MAP: MutableMap<String, String> = HashMap()
+        private val FILED_MAP: MutableMap<String, String> = HashMap()
         const val CHECK_IS = "is"
         const val CHECK_CONTAIN = "contain"
-        const val CHECK_START_WITH = "startwith"
-        const val CHECK_END_WITH = "endwith"
-        const val CHECK_NOT_IS = "notis"
+        const val CHECK_START_WITH = "start_with"
+        const val CHECK_END_WITH = "end_with"
+        const val CHECK_NOT_IS = "not_is"
         const val CHECK_REGEX = "regex"
-        val CHECK_MAP: MutableMap<String?, String> = HashMap()
-        const val CHECK_SIM_SLOT_ALL = "ALL"
+        private val CHECK_MAP: MutableMap<String?, String> = HashMap()
+        private const val CHECK_SIM_SLOT_ALL = "ALL"
         const val CHECK_SIM_SLOT_1 = "SIM1"
         const val CHECK_SIM_SLOT_2 = "SIM2"
-        val SIM_SLOT_MAP: MutableMap<String?, String> = HashMap()
-        fun getRuleMatch(filed: String?, check: String?, value: String, simSlot: String?): String {
-            val SimStr = SIM_SLOT_MAP[simSlot].toString() + "卡 "
-            return if (filed == null || filed == FILED_TRANSPOND_ALL) {
-                SimStr + "全部 转发到 "
+        private val SIM_SLOT_MAP: MutableMap<String?, String> = HashMap()
+        fun getRuleMatch(filed: String?, check: String?, value: String?, simSlot: String?): String {
+            val simStr = SIM_SLOT_MAP[simSlot].toString() + "卡 "
+            return if (filed == null || filed == FILED_FORWARD_ALL) {
+                "${simStr}全部 转发到 "
             } else {
-                SimStr + "当 " + FILED_MAP[filed] + " " + CHECK_MAP[check] + " " + value + " 转发到 "
+                "${simStr}当 ${FILED_MAP[filed]} ${CHECK_MAP[check]} $value 转发到 "
             }
         }
 
@@ -40,7 +41,7 @@ class RuleModel {
                 R.id.btnContent -> FILED_MSG_CONTENT
                 R.id.btnPhone -> FILED_PHONE_NUM
                 R.id.btnMultiMatch -> FILED_MULTI_MATCH
-                else -> FILED_TRANSPOND_ALL
+                else -> FILED_FORWARD_ALL
             }
         }
 
@@ -64,31 +65,30 @@ class RuleModel {
         }
 
         init {
-            FILED_MAP["transpond_all"] = "全部转发"
-            FILED_MAP["phone_num"] = "手机号"
-            FILED_MAP["msg_content"] = "内容"
-            FILED_MAP["multi_match"] = "多重匹配"
+            FILED_MAP[FILED_FORWARD_ALL] = "全部转发"
+            FILED_MAP[FILED_PHONE_NUM] = "手机号"
+            FILED_MAP[FILED_MSG_CONTENT] = "内容"
+            FILED_MAP[FILED_MULTI_MATCH] = "多重匹配"
         }
 
         init {
-            CHECK_MAP["is"] = "是"
-            CHECK_MAP["contain"] = "包含"
-            CHECK_MAP["startwith"] = "开头是"
-            CHECK_MAP["endwith"] = "结尾是"
-            CHECK_MAP["notis"] = "不是"
-            CHECK_MAP["regex"] = "正则匹配"
+            CHECK_MAP[CHECK_IS] = "是"
+            CHECK_MAP[CHECK_CONTAIN] = "包含"
+            CHECK_MAP[CHECK_START_WITH] = "开头是"
+            CHECK_MAP[CHECK_END_WITH] = "结尾是"
+            CHECK_MAP[CHECK_NOT_IS] = "不是"
+            CHECK_MAP[CHECK_REGEX] = "正则匹配"
         }
 
         init {
-            SIM_SLOT_MAP["ALL"] = "全部"
-            SIM_SLOT_MAP["SIM1"] = "SIM1"
-            SIM_SLOT_MAP["SIM2"] = "SIM2"
+            SIM_SLOT_MAP[CHECK_SIM_SLOT_ALL] = "全部"
+            SIM_SLOT_MAP[CHECK_SIM_SLOT_1] = "SIM1"
+            SIM_SLOT_MAP[CHECK_SIM_SLOT_2] = "SIM2"
         }
     }
 
-    private val TAG = "RuleModel"
     var id: Long? = null
-    var filed: String? = null
+    var field: String? = null
     var check: String? = null
     var value: String? = null
     var ruleSenderId: Long? = null
@@ -103,8 +103,8 @@ class RuleModel {
         var mixChecked = false
         if (msg != null) {
             //先检查规则是否命中
-            when (filed) {
-                FILED_TRANSPOND_ALL -> mixChecked = true
+            when (field) {
+                FILED_FORWARD_ALL -> mixChecked = true
                 FILED_PHONE_NUM -> mixChecked = checkValue(msg.mobile)
                 FILED_MSG_CONTENT -> mixChecked = checkValue(msg.content)
                 FILED_MULTI_MATCH -> mixChecked = checkRuleLines(msg, value)
@@ -117,7 +117,7 @@ class RuleModel {
     }
 
     //内容分支
-    fun checkValue(msgValue: String?): Boolean {
+    private fun checkValue(msgValue: String?): Boolean {
         var checked = false
         if (value != null) {
             when (check) {
@@ -147,26 +147,22 @@ class RuleModel {
                 }
             }
         }
-        Log.i(TAG, "checkValue " + msgValue + " " + check + " " + value + " checked:" + checked)
+        Log.i(TAG, "checkValue $msgValue $check $value checked:$checked")
         return checked
     }
 
-    val ruleMatch: String
-        get() {
-            val SimStr = SIM_SLOT_MAP[simSlot].toString() + "卡 "
-            return if (filed == null || filed == FILED_TRANSPOND_ALL) {
-                SimStr + "全部 转发到 "
-            } else {
-                SimStr + "当 " + FILED_MAP[filed] + " " + CHECK_MAP[check] + " " + value + " 转发到 "
-            }
-        }
-    val ruleFiledCheckId: Int
-        get() = when (filed) {
+    val ruleMatch: String by lazy {
+        getRuleMatch(field, check, value, simSlot)
+    }
+
+    val ruleFieldCheckId: Int
+        get() = when (this.field) {
             FILED_MSG_CONTENT -> R.id.btnContent
             FILED_PHONE_NUM -> R.id.btnPhone
             FILED_MULTI_MATCH -> R.id.btnMultiMatch
             else -> R.id.btnTranspondAll
         }
+
     val ruleCheckCheckId: Int
         get() = when (check) {
             CHECK_CONTAIN -> R.id.btnContain
@@ -176,6 +172,7 @@ class RuleModel {
             CHECK_NOT_IS -> R.id.btnNotIs
             else -> R.id.btnIs
         }
+
     val ruleSimSlotCheckId: Int
         get() = when (simSlot) {
             CHECK_SIM_SLOT_1 -> R.id.btnSimSlot1
@@ -186,7 +183,7 @@ class RuleModel {
     override fun toString(): String {
         return "RuleModel{" +
                 "id=" + id +
-                ", filed='" + filed + '\'' +
+                ", field='" + field + '\'' +
                 ", check='" + check + '\'' +
                 ", value='" + value + '\'' +
                 ", senderId=" + ruleSenderId +

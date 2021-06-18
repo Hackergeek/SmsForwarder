@@ -84,7 +84,7 @@ object SendHistory {
         val selectionArgList: MutableList<String> = ArrayList()
         if (id != null) {
             // Define 'where' part of query.
-            selection += " and " + LogTable.LogEntry._ID + " = ? "
+            selection += " and " + LogTable.LogEntry.ID + " = ? "
             // Specify arguments in placeholder order.
             selectionArgList.add(id.toString())
         }
@@ -116,7 +116,7 @@ object SendHistory {
         val selectionArgList: MutableList<String> = ArrayList()
         if (id != null) {
             // Define 'where' part of query.
-            selection += " and " + LogTable.LogEntry._ID + " = ? "
+            selection += " and " + LogTable.LogEntry.ID + " = ? "
             // Specify arguments in placeholder order.
             selectionArgList.add(id.toString())
         }
@@ -131,7 +131,7 @@ object SendHistory {
         val selectionArgs = selectionArgList.toTypedArray()
 
         // How you want the results sorted in the resulting Cursor
-        val sortOrder = LogTable.LogEntry._ID + " DESC"
+        val sortOrder = LogTable.LogEntry.ID + " DESC"
         val cursor = db!!.query(
             LogTable.LogEntry.TABLE_NAME,  // The table to query
             projection,  // The array of columns to return (pass null to get all)
@@ -144,7 +144,7 @@ object SendHistory {
         val tLogs: MutableList<Long> = ArrayList()
         while (cursor.moveToNext()) {
             val itemId = cursor.getLong(
-                cursor.getColumnIndexOrThrow(LogTable.LogEntry._ID)
+                cursor.getColumnIndexOrThrow(LogTable.LogEntry.ID)
             )
             tLogs.add(itemId)
         }

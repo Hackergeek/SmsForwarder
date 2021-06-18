@@ -11,7 +11,7 @@ import com.idormy.sms.forwarder.R
 import com.idormy.sms.forwarder.model.vo.LogVo
 import com.idormy.sms.forwarder.utils.Util.friendlyTime
 
-class LogAdapter     // 适配器的构造函数，把要适配的数据传入这里
+class LogAdapter
     (context: Context?, private val resourceId: Int, private var list: List<LogVo>?) :
     ArrayAdapter<LogVo>(
         context!!, resourceId, list!!
@@ -70,30 +70,11 @@ class LogAdapter     // 适配器的构造函数，把要适配的数据传入�
         return view
     }
 
-    fun add(logVos: List<LogVo>) {
-        if (list != null) {
-            list = logVos
-            notifyDataSetChanged()
-        }
-    }
-
-    fun del(logVos: List<LogVo>) {
-        if (list != null) {
-            list = logVos
-            notifyDataSetChanged()
-        }
-    }
-
     fun update(logVos: List<LogVo>) {
         if (list != null) {
             list = logVos
             notifyDataSetChanged()
         }
-    }
-
-    fun onDateChange(logVos: List<LogVo>?) {
-        list = logVos
-        notifyDataSetChanged()
     }
 
     // 定义一个内部类，用于对控件的实例进行缓存

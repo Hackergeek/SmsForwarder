@@ -82,7 +82,7 @@ class RuleActivity : AppCompatActivity() {
                 builder.setPositiveButton("确定") { _, _ ->
                     RuleUtil.delRule(ruleModels[position].id)
                     initRules()
-                    adapter!!.del(ruleModels)
+                    adapter!!.update(ruleModels)
                     Toast.makeText(baseContext, "删除列表项", Toast.LENGTH_SHORT).show()
                 }
 
@@ -106,7 +106,7 @@ class RuleActivity : AppCompatActivity() {
         val alertDialog71 = AlertDialog.Builder(this@RuleActivity)
         val view1 = View.inflate(this@RuleActivity, R.layout.alert_dialog_setview_rule, null)
         val radioGroupRuleFiled = view1.findViewById<View>(R.id.radioGroupRuleFiled) as RadioGroup
-        if (ruleModel != null) radioGroupRuleFiled.check(ruleModel.ruleFiledCheckId)
+        if (ruleModel != null) radioGroupRuleFiled.check(ruleModel.ruleFieldCheckId)
         val radioGroupRuleCheck = view1.findViewById<View>(R.id.radioGroupRuleCheck) as RadioGroup
         val radioGroupRuleCheck2 = view1.findViewById<View>(R.id.radioGroupRuleCheck2) as RadioGroup
         if (ruleModel != null) {
@@ -167,7 +167,7 @@ class RuleActivity : AppCompatActivity() {
             )
             if (ruleModel == null) {
                 val newRuleModel = RuleModel()
-                newRuleModel.filed =
+                newRuleModel.field =
                     RuleModel.getRuleFiledFromCheckId(radioGroupRuleFiled.checkedRadioButtonId)
                 newRuleModel.check = RuleModel.getRuleCheckFromCheckId(radioGroupRuleCheckId)
                 newRuleModel.simSlot =
@@ -178,9 +178,9 @@ class RuleActivity : AppCompatActivity() {
                 }
                 RuleUtil.addRule(newRuleModel)
                 initRules()
-                adapter!!.add(ruleModels)
+                adapter!!.update(ruleModels)
             } else {
-                ruleModel.filed =
+                ruleModel.field =
                     RuleModel.getRuleFiledFromCheckId(radioGroupRuleFiled.checkedRadioButtonId)
                 ruleModel.check = RuleModel.getRuleCheckFromCheckId(radioGroupRuleCheckId)
                 ruleModel.simSlot =
@@ -199,7 +199,7 @@ class RuleActivity : AppCompatActivity() {
             if (ruleModel != null) {
                 RuleUtil.delRule(ruleModel.id)
                 initRules()
-                adapter!!.del(ruleModels)
+                adapter!!.update(ruleModels)
             }
             show.dismiss()
         }
@@ -212,7 +212,7 @@ class RuleActivity : AppCompatActivity() {
                     radioGroupRuleCheck.checkedRadioButtonId.coerceAtLeast(radioGroupRuleCheck2.checkedRadioButtonId)
                 if (ruleModel == null) {
                     val newRuleModel = RuleModel()
-                    newRuleModel.filed =
+                    newRuleModel.field =
                         RuleModel.getRuleFiledFromCheckId(radioGroupRuleFiled.checkedRadioButtonId)
                     newRuleModel.check = RuleModel.getRuleCheckFromCheckId(radioGroupRuleCheckId)
                     newRuleModel.simSlot =
@@ -221,7 +221,7 @@ class RuleActivity : AppCompatActivity() {
                     newRuleModel.ruleSenderId = java.lang.Long.valueOf(ruleSenderId.toString())
                     testRule(newRuleModel, java.lang.Long.valueOf(ruleSenderId.toString()))
                 } else {
-                    ruleModel.filed =
+                    ruleModel.field =
                         RuleModel.getRuleFiledFromCheckId(radioGroupRuleFiled.checkedRadioButtonId)
                     ruleModel.check = RuleModel.getRuleCheckFromCheckId(radioGroupRuleCheckId)
                     ruleModel.simSlot =

@@ -9,6 +9,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
+import com.idormy.sms.forwarder.model.vo.SmsVo
 import com.idormy.sms.forwarder.utils.SettingUtil
 
 class SettingActivity : AppCompatActivity() {
@@ -90,7 +91,7 @@ class SettingActivity : AppCompatActivity() {
             layoutSmsTemplate.visibility = if (isChecked) View.VISIBLE else View.GONE
             SettingUtil.switchSmsTemplate(isChecked)
             if (!isChecked) {
-                textSmsTemplate.setText("{{来源号码}}\n{{短信内容}}\n{{卡槽信息}}\n{{接收时间}}\n{{设备名称}}")
+                textSmsTemplate.setText(SmsVo.SMS_DEFAULT_TEMPLATE)
             }
         }
     }
@@ -155,7 +156,7 @@ class SettingActivity : AppCompatActivity() {
         switchSmsTemplate.isChecked = false
         switchSmsTemplate(switchSmsTemplate)
         val textSmsTemplate = findViewById<EditText>(R.id.text_sms_template)
-        textSmsTemplate.setText("{{来源号码}}\n{{短信内容}}\n{{卡槽信息}}\n{{接收时间}}\n{{设备名称}}")
+        textSmsTemplate.setText(SmsVo.SMS_DEFAULT_TEMPLATE)
         editSmsTemplate(textSmsTemplate)
     }
 }

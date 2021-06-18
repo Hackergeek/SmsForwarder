@@ -41,7 +41,7 @@ class LogVo {
     constructor() {}
 
     val simImageId: Int
-        get() = if (simInfo != null && !simInfo!!.isEmpty()
+        get() = if (simInfo != null && simInfo!!.isNotEmpty()
             && simInfo!!.replace("-", "").substring(0, 4) == "SIM2"
         ) {
             R.mipmap.sim2

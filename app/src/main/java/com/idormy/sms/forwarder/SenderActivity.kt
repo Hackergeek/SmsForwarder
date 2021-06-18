@@ -83,7 +83,7 @@ class SenderActivity : AppCompatActivity() {
                     if (senderModel != null) {
                         SenderUtil.delSender(senderModel.id)
                         initSenders()
-                        adapter!!.del(senderModels)
+                        adapter!!.update(senderModels)
                     }
                 }
             }
@@ -98,7 +98,7 @@ class SenderActivity : AppCompatActivity() {
                 builder.setPositiveButton("确定") { _, _ ->
                     SenderUtil.delSender(senderModels[position].id)
                     initSenders()
-                    adapter!!.del(senderModels)
+                    adapter!!.update(senderModels)
                     Toast.makeText(baseContext, "删除列表项", Toast.LENGTH_SHORT).show()
                 }
 
@@ -155,8 +155,8 @@ class SenderActivity : AppCompatActivity() {
         val editTextDingdingSecret = view1.findViewById<EditText>(R.id.editTextDingdingSecret)
         if (dingDingSettingVo != null) editTextDingdingSecret.setText(dingDingSettingVo.secret)
         val editTextDingdingAtMobiles = view1.findViewById<EditText>(R.id.editTextDingdingAtMobiles)
-        if (dingDingSettingVo?.atMobils != null) editTextDingdingAtMobiles.setText(
-            dingDingSettingVo.atMobils
+        if (dingDingSettingVo?.atPhoneNumber != null) editTextDingdingAtMobiles.setText(
+            dingDingSettingVo.atPhoneNumber
         )
         val switchDingDingAtAll = view1.findViewById<SwitchCompat>(R.id.switchDingDingAtAll)
         if (dingDingSettingVo?.atAll != null) switchDingDingAtAll.isChecked =
@@ -185,7 +185,7 @@ class SenderActivity : AppCompatActivity() {
                 newSenderModel.jsonSetting = JSON.toJSONString(dingDingSettingVonew)
                 SenderUtil.addSender(newSenderModel)
                 initSenders()
-                adapter!!.add(senderModels)
+                adapter!!.update(senderModels)
                 //                    adapter.add(newSenderModel);
             } else {
                 senderModel.name = editTextDingdingName.text.toString()
@@ -209,7 +209,7 @@ class SenderActivity : AppCompatActivity() {
             if (senderModel != null) {
                 SenderUtil.delSender(senderModel.id)
                 initSenders()
-                adapter!!.del(senderModels)
+                adapter!!.update(senderModels)
                 //                    adapter.del(position);
             }
             show.dismiss()
@@ -300,7 +300,7 @@ class SenderActivity : AppCompatActivity() {
                 newSenderModel.jsonSetting = JSON.toJSONString(emailSettingVonew)
                 SenderUtil.addSender(newSenderModel)
                 initSenders()
-                adapter!!.add(senderModels)
+                adapter!!.update(senderModels)
             } else {
                 senderModel.name = editTextEmailName.text.toString()
                 senderModel.type = SenderModel.TYPE_EMAIL
@@ -325,7 +325,7 @@ class SenderActivity : AppCompatActivity() {
             if (senderModel != null) {
                 SenderUtil.delSender(senderModel.id)
                 initSenders()
-                adapter!!.del(senderModels)
+                adapter!!.update(senderModels)
             }
             show.dismiss()
         }
@@ -408,7 +408,7 @@ class SenderActivity : AppCompatActivity() {
                 newSenderModel.jsonSetting = JSON.toJSONString(barkSettingVoNew)
                 SenderUtil.addSender(newSenderModel)
                 initSenders()
-                adapter!!.add(senderModels)
+                adapter!!.update(senderModels)
             } else {
                 senderModel.name = editTextBarkName.text.toString()
                 senderModel.type = SenderModel.TYPE_BARK
@@ -427,7 +427,7 @@ class SenderActivity : AppCompatActivity() {
             if (senderModel != null) {
                 SenderUtil.delSender(senderModel.id)
                 initSenders()
-                adapter!!.del(senderModels)
+                adapter!!.update(senderModels)
             }
             show.dismiss()
         }
@@ -492,7 +492,7 @@ class SenderActivity : AppCompatActivity() {
                 newSenderModel.jsonSetting = JSON.toJSONString(serverchanSettingVoNew)
                 SenderUtil.addSender(newSenderModel)
                 initSenders()
-                adapter!!.add(senderModels)
+                adapter!!.update(senderModels)
             } else {
                 senderModel.name = editTextServerChanName.text.toString()
                 senderModel.type = SenderModel.TYPE_SERVER_CHAN
@@ -511,7 +511,7 @@ class SenderActivity : AppCompatActivity() {
             if (senderModel != null) {
                 SenderUtil.delSender(senderModel.id)
                 initSenders()
-                adapter!!.del(senderModels)
+                adapter!!.update(senderModels)
             }
             show.dismiss()
         }
@@ -587,7 +587,7 @@ class SenderActivity : AppCompatActivity() {
                 newSenderModel.jsonSetting = JSON.toJSONString(webNotifySettingVoNew)
                 SenderUtil.addSender(newSenderModel)
                 initSenders()
-                adapter!!.add(senderModels)
+                adapter!!.update(senderModels)
             } else {
                 senderModel.name = editTextWebNotifyName.text.toString()
                 senderModel.type = SenderModel.TYPE_WEB_NOTIFY
@@ -608,7 +608,7 @@ class SenderActivity : AppCompatActivity() {
             if (senderModel != null) {
                 SenderUtil.delSender(senderModel.id)
                 initSenders()
-                adapter!!.del(senderModels)
+                adapter!!.update(senderModels)
             }
             show.dismiss()
         }
@@ -687,7 +687,7 @@ class SenderActivity : AppCompatActivity() {
                 newSenderModel.jsonSetting = JSON.toJSONString(qywxGroupRobotSettingVoNew)
                 SenderUtil.addSender(newSenderModel)
                 initSenders()
-                adapter!!.add(senderModels)
+                adapter!!.update(senderModels)
             } else {
                 senderModel.name = editTextQYWXGroupRobotName.text.toString()
                 senderModel.type = SenderModel.TYPE_QYWX_GROUP_ROBOT
@@ -706,7 +706,7 @@ class SenderActivity : AppCompatActivity() {
             if (senderModel != null) {
                 SenderUtil.delSender(senderModel.id)
                 initSenders()
-                adapter!!.del(senderModels)
+                adapter!!.update(senderModels)
             }
             show.dismiss()
         }
@@ -811,7 +811,7 @@ class SenderActivity : AppCompatActivity() {
                 newSenderModel.jsonSetting = JSON.toJSONString(qywxAppSettingVoNew)
                 SenderUtil.addSender(newSenderModel)
                 initSenders()
-                adapter!!.add(senderModels)
+                adapter!!.update(senderModels)
             } else {
                 senderModel.name = editTextQYWXAppName.text.toString()
                 senderModel.type = SenderModel.TYPE_QYWX_APP
@@ -834,7 +834,7 @@ class SenderActivity : AppCompatActivity() {
             if (senderModel != null) {
                 SenderUtil.delSender(senderModel.id)
                 initSenders()
-                adapter!!.del(senderModels)
+                adapter!!.update(senderModels)
             }
             show.dismiss()
         }
@@ -913,7 +913,7 @@ class SenderActivity : AppCompatActivity() {
                 newSenderModel.jsonSetting = JSON.toJSONString(telegramSettingVoNew)
                 SenderUtil.addSender(newSenderModel)
                 initSenders()
-                adapter!!.add(senderModels)
+                adapter!!.update(senderModels)
             } else {
                 senderModel.name = editTextTelegramName.text.toString()
                 senderModel.type = SenderModel.TYPE_TELEGRAM
@@ -933,7 +933,7 @@ class SenderActivity : AppCompatActivity() {
             if (senderModel != null) {
                 SenderUtil.delSender(senderModel.id)
                 initSenders()
-                adapter!!.del(senderModels)
+                adapter!!.update(senderModels)
             }
             show.dismiss()
         }
@@ -1010,7 +1010,7 @@ class SenderActivity : AppCompatActivity() {
                 newSenderModel.jsonSetting = JSON.toJSONString(smsSettingVoNew)
                 SenderUtil.addSender(newSenderModel)
                 initSenders()
-                adapter!!.add(senderModels)
+                adapter!!.update(senderModels)
             } else {
                 senderModel.name = editTextSmsName.text.toString()
                 senderModel.type = SenderModel.TYPE_SMS
@@ -1031,7 +1031,7 @@ class SenderActivity : AppCompatActivity() {
             if (senderModel != null) {
                 SenderUtil.delSender(senderModel.id)
                 initSenders()
-                adapter!!.del(senderModels)
+                adapter!!.update(senderModels)
             }
             show.dismiss()
         }

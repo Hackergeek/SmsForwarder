@@ -100,7 +100,7 @@ object SendUtil {
                                 handError,
                                 dingDingSettingVo.token,
                                 dingDingSettingVo.secret,
-                                dingDingSettingVo.atMobils,
+                                dingDingSettingVo.atPhoneNumber,
                                 dingDingSettingVo.atAll,
                                 smsVo.smsVoForSend
                             )

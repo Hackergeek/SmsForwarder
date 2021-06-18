@@ -1,7 +1,6 @@
 package com.idormy.sms.forwarder.sender
 
 import android.content.ContentValues
-import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.provider.BaseColumns
 import android.util.Log
@@ -48,7 +47,7 @@ object SenderUtil {
         values.put(SenderTable.SenderEntry.COLUMN_NAME_TYPE, senderModel.type)
         values.put(SenderTable.SenderEntry.COLUMN_NAME_STATUS, senderModel.getStatus())
         values.put(SenderTable.SenderEntry.COLUMN_NAME_JSON_SETTING, senderModel.jsonSetting)
-        val selection = SenderTable.SenderEntry._ID + " = ? "
+        val selection = SenderTable.SenderEntry.ID + " = ? "
         val whereArgs = arrayOf(senderModel.id.toString())
         return db!!.update(SenderTable.SenderEntry.TABLE_NAME, values, selection, whereArgs)
             .toLong()
@@ -61,7 +60,7 @@ object SenderUtil {
         val selectionArgList: MutableList<String> = ArrayList()
         if (id != null) {
             // Define 'where' part of query.
-            selection += " and " + SenderTable.SenderEntry._ID + " = ? "
+            selection += " and " + SenderTable.SenderEntry.ID + " = ? "
             // Specify arguments in placeholder order.
             selectionArgList.add(id.toString())
         }
@@ -87,7 +86,7 @@ object SenderUtil {
         val selectionArgList: MutableList<String> = ArrayList()
         if (id != null) {
             // Define 'where' part of query.
-            selection += " and " + SenderTable.SenderEntry._ID + " = ? "
+            selection += " and " + SenderTable.SenderEntry.ID + " = ? "
             // Specify arguments in placeholder order.
             selectionArgList.add(id.toString())
         }
@@ -102,7 +101,7 @@ object SenderUtil {
         val selectionArgs = selectionArgList.toTypedArray()
 
         // How you want the results sorted in the resulting Cursor
-        val sortOrder = SenderTable.SenderEntry._ID + " DESC"
+        val sortOrder = SenderTable.SenderEntry.ID + " DESC"
         val cursor = db!!.query(
             SenderTable.SenderEntry.TABLE_NAME,  // The table to query
             projection,  // The array of columns to return (pass null to get all)
@@ -115,7 +114,7 @@ object SenderUtil {
         val tSenders: MutableList<SenderModel> = ArrayList()
         while (cursor.moveToNext()) {
             val itemId = cursor.getLong(
-                cursor.getColumnIndexOrThrow(SenderTable.SenderEntry._ID)
+                cursor.getColumnIndexOrThrow(SenderTable.SenderEntry.ID)
             )
             val itemName = cursor.getString(
                 cursor.getColumnIndexOrThrow(SenderTable.SenderEntry.COLUMN_NAME_NAME)

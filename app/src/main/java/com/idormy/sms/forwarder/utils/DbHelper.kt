@@ -56,7 +56,7 @@ class DbHelper(context: Context?) :
         const val DATABASE_NAME = "sms_forwarder.db"
         private val SQL_CREATE_ENTRIES = listOf(
             "CREATE TABLE " + LogTable.LogEntry.TABLE_NAME + " (" +
-                    LogTable.LogEntry._ID + " INTEGER PRIMARY KEY," +
+                    LogTable.LogEntry.ID + " INTEGER PRIMARY KEY," +
                     LogTable.LogEntry.COLUMN_NAME_FROM + " TEXT," +
                     LogTable.LogEntry.COLUMN_NAME_CONTENT + " TEXT," +
                     LogTable.LogEntry.COLUMN_NAME_SIM_INFO + " TEXT," +
@@ -65,7 +65,7 @@ class DbHelper(context: Context?) :
                     LogTable.LogEntry.COLUMN_NAME_FORWARD_RESPONSE + " TEXT NOT NULL DEFAULT 'ok'," +
                     LogTable.LogEntry.COLUMN_NAME_TIME + " TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)",
             "CREATE TABLE " + RuleTable.RuleEntry.TABLE_NAME + " (" +
-                    RuleTable.RuleEntry._ID + " INTEGER PRIMARY KEY," +
+                    RuleTable.RuleEntry.ID + " INTEGER PRIMARY KEY," +
                     RuleTable.RuleEntry.COLUMN_NAME_FILED + " TEXT," +
                     RuleTable.RuleEntry.COLUMN_NAME_CHECK + " TEXT," +
                     RuleTable.RuleEntry.COLUMN_NAME_VALUE + " TEXT," +
@@ -73,7 +73,7 @@ class DbHelper(context: Context?) :
                     RuleTable.RuleEntry.COLUMN_NAME_TIME + " TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP," +
                     RuleTable.RuleEntry.COLUMN_NAME_SIM_SLOT + " TEXT NOT NULL DEFAULT 'ALL')",
             "CREATE TABLE " + SenderTable.SenderEntry.TABLE_NAME + " (" +
-                    SenderTable.SenderEntry._ID + " INTEGER PRIMARY KEY," +
+                    SenderTable.SenderEntry.ID + " INTEGER PRIMARY KEY," +
                     SenderTable.SenderEntry.COLUMN_NAME_NAME + " TEXT," +
                     SenderTable.SenderEntry.COLUMN_NAME_STATUS + " INTEGER," +
                     SenderTable.SenderEntry.COLUMN_NAME_TYPE + " INTEGER," +

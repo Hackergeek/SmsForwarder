@@ -11,7 +11,7 @@ import com.idormy.sms.forwarder.R
 import com.idormy.sms.forwarder.model.RuleModel
 import com.idormy.sms.forwarder.sender.SenderUtil
 
-class RuleAdapter     // 适配器的构造函数，把要适配的数据传入这里
+class RuleAdapter
     (context: Context?, private val resourceId: Int, private var list: List<RuleModel>?) :
     ArrayAdapter<RuleModel>(
         context!!, resourceId, list!!
@@ -57,29 +57,15 @@ class RuleAdapter     // 适配器的构造函数，把要适配的数据传入�
         // 获取控件实例，并调用set...方法使其显示出来
         if (ruleModel != null) {
             val senderModel = SenderUtil.getSender(ruleModel.ruleSenderId, null)
-            viewHolder.ruleMatch!!.text = ruleModel.ruleMatch
+            viewHolder.ruleMatch.text = ruleModel.ruleMatch
             if (senderModel.isNotEmpty()) {
-                viewHolder.ruleSender!!.text = senderModel[0].name
-                viewHolder.ruleSenderImage!!.setImageResource(senderModel[0].imageId)
+                viewHolder.ruleSender.text = senderModel[0].name
+                viewHolder.ruleSenderImage.setImageResource(senderModel[0].imageId)
             } else {
-                viewHolder.ruleSender!!.text = ""
+                viewHolder.ruleSender.text = ""
             }
         }
         return view
-    }
-
-    fun add(ruleModels: List<RuleModel>) {
-        if (list != null) {
-            list = ruleModels
-            notifyDataSetChanged()
-        }
-    }
-
-    fun del(ruleModels: List<RuleModel>) {
-        if (list != null) {
-            list = ruleModels
-            notifyDataSetChanged()
-        }
     }
 
     fun update(ruleModels: List<RuleModel>) {
@@ -91,8 +77,8 @@ class RuleAdapter     // 适配器的构造函数，把要适配的数据传入�
 
     // 定义一个内部类，用于对控件的实例进行缓存
     internal inner class ViewHolder {
-        var ruleMatch: TextView? = null
-        var ruleSender: TextView? = null
-        var ruleSenderImage: ImageView? = null
+        lateinit var ruleMatch: TextView
+        lateinit var ruleSender: TextView
+        lateinit var ruleSenderImage: ImageView
     }
 }

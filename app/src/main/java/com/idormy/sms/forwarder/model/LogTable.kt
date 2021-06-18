@@ -7,7 +7,7 @@ class LogTable  // To prevent someone from accidentally instantiating the contra
 private constructor() {
     /* Inner class that defines the table contents */
     object LogEntry : BaseColumns {
-        const val _ID = BaseColumns._ID
+        const val ID = BaseColumns._ID
         const val TABLE_NAME = "log"
         const val COLUMN_NAME_FROM = "l_from"
         const val COLUMN_NAME_CONTENT = "content"

@@ -13,10 +13,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import com.idormy.sms.forwarder.receiver.SmsForwarderBroadcastReceiver
 import com.idormy.sms.forwarder.ReFreshListView.IRefreshListener
 import com.idormy.sms.forwarder.adapter.LogAdapter
 import com.idormy.sms.forwarder.model.vo.LogVo
+import com.idormy.sms.forwarder.receiver.SmsForwarderBroadcastReceiver
 import com.idormy.sms.forwarder.utils.*
 import com.umeng.analytics.MobclickAgent
 import java.util.*
@@ -101,7 +101,6 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun showList(logVosN: List<LogVo>) {
-        Log.d(TAG, "showList: $logVosN")
         if (adapter == null) {
             // 将适配器上的数据传递给listView
             listView = findViewById<ReFreshListView>(R.id.list_view_log)
@@ -109,7 +108,7 @@ class MainActivity : AppCompatActivity(),
             adapter = LogAdapter(this@MainActivity, R.layout.item_log, logVosN)
             listView.adapter = adapter
         } else {
-            adapter!!.onDateChange(logVosN)
+            adapter!!.update(logVosN)
         }
     }
 
@@ -202,7 +201,7 @@ class MainActivity : AppCompatActivity(),
                 // TODO Auto-generated method stub
                 LogUtil.delLog(null, null)
                 initTLogs()
-                adapter!!.add(logVos)
+                adapter!!.update(logVos)
             }
         builder.show()
     }
