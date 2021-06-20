@@ -1,8 +1,13 @@
 package com.idormy.sms.forwarder
 
+import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
+import android.os.PowerManager
+import android.provider.Settings
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -21,12 +26,28 @@ import com.idormy.sms.forwarder.utils.*
 import com.umeng.analytics.MobclickAgent
 import java.util.*
 
+
 class MainActivity : AppCompatActivity(),
     IRefreshListener {
     private val smsBroadcastReceiver: SmsForwarderBroadcastReceiver? = null
 
     companion object {
         private const val TAG = "MainActivity"
+    }
+
+    /**
+     * 忽略电池优化
+     */
+    @SuppressLint("BatteryLife")
+    private fun ignoreBatteryOptimization(activity: Activity) {
+        val powerManager = getSystemService(POWER_SERVICE) as PowerManager
+        val hasIgnored = powerManager.isIgnoringBatteryOptimizations(activity.packageName)
+        //  判断当前APP是否有加入电池优化的白名单，如果没有，弹出加入电池优化的白名单的设置对话框。
+        if (!hasIgnored) {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+            intent.data = Uri.parse("package:" + activity.packageName)
+            startActivity(intent)
+        }
     }
 
     // logVoList用于存储数据
@@ -42,6 +63,7 @@ class MainActivity : AppCompatActivity(),
         val pm = packageManager
         PhoneUtils.checkPermission(pm, this)
 
+        ignoreBatteryOptimization(this)
         //获取SIM信息
         PhoneUtils.init()
         MyApplication.SimInfoList = PhoneUtils.simMultiInfo
