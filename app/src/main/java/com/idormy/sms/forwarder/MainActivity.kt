@@ -2,6 +2,8 @@ package com.idormy.sms.forwarder
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.WallpaperManager
+import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -22,9 +24,11 @@ import com.idormy.sms.forwarder.ReFreshListView.IRefreshListener
 import com.idormy.sms.forwarder.adapter.LogAdapter
 import com.idormy.sms.forwarder.model.vo.LogVo
 import com.idormy.sms.forwarder.receiver.SmsForwarderBroadcastReceiver
-import com.idormy.sms.forwarder.utils.*
+import com.idormy.sms.forwarder.utils.LogUtil
+import com.idormy.sms.forwarder.utils.NetUtil
+import com.idormy.sms.forwarder.utils.PhoneUtils
+import com.idormy.sms.forwarder.utils.Util
 import com.umeng.analytics.MobclickAgent
-import java.util.*
 
 
 class MainActivity : AppCompatActivity(),
@@ -71,6 +75,21 @@ class MainActivity : AppCompatActivity(),
 
         //短信&网络组件初始化
         NetUtil.init()
+//        startWallpaperSetting()
+    }
+
+    private fun startWallpaperSetting() {
+        val localIntent = Intent()
+        localIntent.action =
+            WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER //android.service.wallpaper.CHANGE_LIVE_WALLPAPER
+
+        localIntent.putExtra(
+            WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT, ComponentName(
+                this.applicationContext.packageName,
+                WallpaperSetting::class.java.canonicalName
+            )
+        )
+        this.startActivity(localIntent)
     }
 
     override fun onStart() {
